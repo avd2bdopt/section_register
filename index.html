@@ -164,6 +164,8 @@
   .status-forwarded{background:var(--blue-soft);color:var(--blue);}
   .status-completed{background:var(--sage-soft);color:var(--sage);}
   .status-returned{background:var(--rust-soft);color:var(--rust);}
+  .status-btn{background:none;border:none;padding:0;cursor:pointer;}
+  .status-btn:hover .reg-status{box-shadow:0 0 0 2px rgba(28,43,74,.15);}
   .reg-actions{display:flex;gap:6px;justify-content:flex-end;}
   .icon-btn{background:none;border:none;cursor:pointer;color:var(--slate-light);font-size:15px;padding:2px 4px;}
   .icon-btn:hover{color:var(--ink);}
@@ -363,7 +365,7 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
    only in this browser, via localStorage) so you can preview it.
    ===================================================================== */
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzndCo83Wm1kg69MRR8jkDl80IypkvsZAcMrAWaeQmxfizmU5TuZ4-83XRYbTbHtdKR/exec" // e.g. "https://script.google.com/macros/s/AKfycb.../exec"
+  API_URL: "" // e.g. "https://script.google.com/macros/s/AKfycb.../exec"
 };
 
 /* ---------------------------------------------------------------------
@@ -416,13 +418,14 @@ const DISCIPLINARY_STATUSES = ["Received and under process", "Returned", "Comple
 const RETURNED_STAGE = "Case Returned to CBI for non-compliance with the Checklist";
 
 const SCHEMAS = {
-  SLP: { label: "Special Leave Petitions", desc: "Requests for SLPs received from the SLP Cell.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES },
-  Appeals: { label: "Appeals (Lower Court / CBI Court)", desc: "Requests for appeals against Lower Court / CBI Court judgements.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES },
-  Withdrawal: { label: "Withdrawal from Prosecution", desc: "Requests for withdrawal from prosecution cases.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES },
+  SLP: { label: "Special Leave Petitions", desc: "Requests for SLPs received from the SLP Cell.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI"] },
+  Appeals: { label: "Appeals (Lower Court / CBI Court)", desc: "Requests for appeals against Lower Court / CBI Court judgements.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI"] },
+  Withdrawal: { label: "Withdrawal from Prosecution", desc: "Requests for withdrawal from prosecution cases.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI"] },
   Disciplinary: {
     label: "Disciplinary Proceedings",
     desc: "Disciplinary proceeding cases and their current stage.",
     statusOptions: DISCIPLINARY_STATUSES,
+    statusQuickFields: ["Checklist Compliance", "Date of Return of Proposal", "Compliance Received from CBI", "Date of Receiving Compliance", "Stage", "Date of IO Change Request", "Date of PO Change Request", "Status"],
     fields: [
       { key: "Date of Receipt", label: "Date of receipt", type: "date", required: true },
       { key: "Checklist Compliance", label: "Complying with checklist?", type: "select", options: ["Yes", "No"], default: "Yes" },
@@ -795,7 +798,7 @@ function registerRow(cat, r, idx) {
       </div>
       <div class="reg-file">${escapeHtml(r["File No"] || "—")}</div>
       <div class="reg-file">${escapeHtml(r["Computer No"] || "—")}</div>
-      <div><span class="reg-status ${statusClass(statusLabel)}">${escapeHtml(statusLabel)}</span></div>
+      <div><button class="status-btn" data-cat="${cat}" data-id="${r.ID}" title="Update status"><span class="reg-status ${statusClass(statusLabel)}">${escapeHtml(statusLabel)}</span></button></div>
       <div class="reg-actions">
         <button class="icon-btn edit" title="Edit">✎</button>
         <button class="icon-btn del" title="Delete">🗑</button>
@@ -827,8 +830,10 @@ function attachRowHandlers() {
     const rec = (DATA[cat]||[]).find(r => r.ID === id);
     const editBtn = row.querySelector(".edit");
     const delBtn = row.querySelector(".del");
-    if (editBtn) editBtn.onclick = () => openDrawer(cat, rec);
+    const statusBtn = row.querySelector(".status-btn");
+    if (editBtn) editBtn.onclick = () => openDrawer(cat, rec, "full");
     if (delBtn) delBtn.onclick = () => confirmDelete(cat, id);
+    if (statusBtn) statusBtn.onclick = () => openDrawer(cat, rec, "status");
   });
   document.querySelectorAll("[data-goto]").forEach(b => b.onclick = () => { currentTab = b.dataset.goto; renderNav(); renderPage(); });
   const s = document.getElementById("searchInput");
@@ -849,14 +854,28 @@ function escapeHtml(s) {
    conditional show/hide, plus the special checklist→stage/status lock
    for Disciplinary Proceedings.
    --------------------------------------------------------------------- */
-function openDrawer(cat, record) {
+function openDrawer(cat, record, mode) {
+  mode = mode || "full";
   editingId = record ? record.ID : null;
   const schema = SCHEMAS[cat];
-  document.getElementById("drawerTitle").textContent = record ? "Edit entry" : "New entry";
-  document.getElementById("drawerSub").textContent = schema.label;
+  const fields = mode === "status"
+    ? schema.fields.filter(f => schema.statusQuickFields.includes(f.key))
+    : schema.fields;
+
+  document.getElementById("drawerTitle").textContent = mode === "status" ? "Update status" : (record ? "Edit entry" : "New entry");
+  if (mode === "status" && record) {
+    const idBits = [];
+    if (record["File No"]) idBits.push("File No. " + record["File No"]);
+    if (record["Computer No"]) idBits.push("Computer No. " + record["Computer No"]);
+    const subjectBit = record.Subject ? (" — " + record.Subject.slice(0, 70) + (record.Subject.length > 70 ? "…" : "")) : "";
+    document.getElementById("drawerSub").textContent = schema.label + " · " + (idBits.join(" · ") || "—") + subjectBit;
+  } else {
+    document.getElementById("drawerSub").textContent = schema.label;
+  }
+
   const form = document.getElementById("entryForm");
 
-  form.innerHTML = schema.fields.map(f => {
+  form.innerHTML = fields.map(f => {
     const val = record ? (record[f.key] ?? "") : (f.default || "");
     let inputHtml;
     if (f.type === "select") {
@@ -870,12 +889,12 @@ function openDrawer(cat, record) {
   }).join("") + `
     <div class="drawer-actions">
       <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
-      <button type="submit" class="btn">${record ? "Save changes" : "Add entry"}</button>
+      <button type="submit" class="btn">${mode === "status" ? "Save status" : (record ? "Save changes" : "Add entry")}</button>
     </div>`;
 
   function refresh() {
-    applyConditionals(form, schema);
-    if (cat === "Disciplinary") applyDisciplinaryLogic(form);
+    applyConditionals(form, fields);
+    if (cat === "Disciplinary" && fields.some(f => f.key === "Checklist Compliance")) applyDisciplinaryLogic(form);
   }
   refresh();
   form.addEventListener("change", refresh);
@@ -883,13 +902,13 @@ function openDrawer(cat, record) {
   form.onsubmit = async (e) => {
     e.preventDefault();
     const data = {};
-    schema.fields.forEach(f => { const el = form.elements[f.key]; data[f.key] = el ? el.value : ""; });
+    fields.forEach(f => { const el = form.elements[f.key]; data[f.key] = el ? el.value : ""; });
     try {
       if (editingId) {
         await apiUpdate(cat, editingId, data);
         const idx = DATA[cat].findIndex(r => r.ID === editingId);
         DATA[cat][idx] = { ...DATA[cat][idx], ...data };
-        showToast("Entry updated");
+        showToast(mode === "status" ? "Status updated" : "Entry updated");
       } else {
         const saved = await apiAdd(cat, data);
         DATA[cat].push(saved);
@@ -906,12 +925,12 @@ function openDrawer(cat, record) {
   document.getElementById("overlay").classList.add("open");
 }
 
-function applyConditionals(form, schema) {
+function applyConditionals(form, fields) {
   const values = {};
-  schema.fields.forEach(f => { const el = form.elements[f.key]; if (el) values[f.key] = el.value; });
+  fields.forEach(f => { const el = form.elements[f.key]; if (el) values[f.key] = el.value; });
   form.querySelectorAll(".field[data-fieldkey]").forEach(wrapper => {
     const key = wrapper.dataset.fieldkey;
-    const f = schema.fields.find(x => x.key === key);
+    const f = fields.find(x => x.key === key);
     if (!f) return;
     const show = f.showIf ? values[f.showIf.field] === f.showIf.equals : true;
     wrapper.style.display = show ? "" : "none";
