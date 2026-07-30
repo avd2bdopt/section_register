@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVD-II (B) — Case Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C2B4A;
+    --ink-soft:#334268;
+    --paper:#F5F2EA;
+    --paper-raised:#FBFAF6;
+    --rust:#8C3B2E;
+    --rust-soft:#F4E4DF;
+    --sage:#4A6B54;
+    --sage-soft:#E4EBE3;
+    --amber:#93691E;
+    --amber-soft:#F3E9D2;
+    --blue:#2E5A8C;
+    --blue-soft:#E1EAF4;
+    --slate:#3A3F4B;
+    --slate-light:#767C8C;
+    --border:#DCD5C4;
+    --border-strong:#C7BEA6;
+    --serif: 'Source Serif 4', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--slate);}
+  a{color:inherit;}
+
+  /* ---------- Login ---------- */
+  #loginScreen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='1' cy='1' r='1' fill='%23334268'/%3E%3C/svg%3E");
+    padding:20px;
+  }
+  .login-card{
+    background:var(--paper-raised);border-radius:14px;padding:36px 34px;width:100%;max-width:360px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+  }
+  .login-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-light);}
+  .login-title{font-family:var(--serif);font-size:24px;font-weight:600;color:var(--ink);margin:6px 0 2px;}
+  .login-sub{font-size:12.5px;color:var(--slate-light);margin-bottom:22px;}
+  .login-card .field{margin-bottom:14px;}
+  .login-card label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .login-card input{
+    width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:7px;
+    font-family:var(--sans);font-size:14px;background:#fff;
+  }
+  .login-error{
+    display:none;background:var(--rust-soft);color:var(--rust);font-size:12.5px;padding:9px 11px;
+    border-radius:7px;margin-bottom:14px;
+  }
+  .login-card .btn{width:100%;padding:11px;font-size:14px;}
+
+  /* ---------- Layout ---------- */
+  .app{display:none;min-height:100vh;}
+  .app.open{display:flex;}
+  .sidebar{
+    width:250px;flex-shrink:0;background:var(--ink);color:#EDE9DD;
+    padding:28px 20px;position:sticky;top:0;height:100vh;overflow-y:auto;
+  }
+  .brand{margin-bottom:6px;}
+  .brand-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#B9C2DA;}
+  .brand-title{font-family:var(--serif);font-size:22px;line-height:1.25;margin:6px 0 2px;font-weight:600;}
+  .brand-sub{font-size:12px;color:#9AA5C2;margin-bottom:28px;}
+
+  .nav{list-style:none;padding:0;margin:0;}
+  .nav li + li{margin-top:4px;}
+  .nav li.sep{border-top:1px solid rgba(255,255,255,.12);margin:14px 0 10px;padding-top:4px;}
+  .nav button{
+    width:100%;text-align:left;background:none;border:none;color:#D9DEEE;
+    padding:10px 12px;border-radius:6px;font-family:var(--sans);font-size:14px;
+    cursor:pointer;display:flex;justify-content:space-between;align-items:center;
+    transition:background .15s ease;
+  }
+  .nav button:hover{background:rgba(255,255,255,.07);}
+  .nav button.active{background:#EDE9DD;color:var(--ink);font-weight:600;}
+  .nav .count{font-family:var(--mono);font-size:11px;opacity:.75;}
+  .nav button.active .count{opacity:.6;}
+
+  .sidebar-foot{margin-top:32px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:#8B96B6;line-height:1.6;}
+  .api-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--amber);}
+  .api-dot.live{background:#6FA37B;}
+  .logout-btn{background:none;border:none;color:#B9C2DA;font-size:11px;cursor:pointer;text-decoration:underline;padding:0;margin-top:8px;}
+
+  .main{flex:1;padding:32px 40px 80px;max-width:1180px;}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+  .page-title{font-family:var(--serif);font-size:28px;font-weight:600;color:var(--ink);margin:0;}
+  .page-desc{color:var(--slate-light);font-size:13px;margin-top:4px;}
+
+  /* ---------- Summary cards ---------- */
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .card{
+    background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;
+    padding:16px 18px;
+  }
+  .card-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;}
+  .card-value{font-family:var(--serif);font-size:30px;color:var(--ink);margin-top:6px;}
+  .card-value.alert{color:var(--rust);}
+  .card-hint{font-size:11px;color:var(--slate-light);margin-top:2px;}
+
+  /* ---------- Charts ---------- */
+  .charts-row{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-bottom:24px;}
+  .chart-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .chart-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;margin-bottom:10px;}
+  .chart-body{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+  .legend{list-style:none;padding:0;margin:0;font-size:12px;}
+  .legend li{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+  .legend .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .legend .lbl{color:var(--slate);}
+  .legend .val{font-family:var(--mono);color:var(--slate-light);margin-left:auto;padding-left:10px;}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .search{
+    flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border-strong);border-radius:7px;
+    font-family:var(--sans);font-size:13px;background:var(--paper-raised);
+  }
+  select.filter{
+    padding:9px 10px;border:1px solid var(--border-strong);border-radius:7px;
+    font-family:var(--sans);font-size:13px;background:var(--paper-raised);color:var(--slate);
+  }
+  .btn{
+    padding:9px 16px;border-radius:7px;border:1px solid var(--ink);background:var(--ink);color:#F5F2EA;
+    font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
+  }
+  .btn:hover{background:var(--ink-soft);}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--border-strong);}
+  .btn.ghost:hover{background:#EEE9DA;}
+  .btn.small{padding:5px 10px;font-size:12px;}
+  .btn.danger{background:transparent;color:var(--rust);border-color:var(--rust-soft);}
+  .btn.danger:hover{background:var(--rust-soft);}
+
+  /* ---------- Register / table ---------- */
+  .register{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--paper-raised);}
+  .reg-row{
+    display:grid;grid-template-columns:36px 100px 1fr 130px 130px 150px 80px;
+    gap:10px;padding:13px 16px;align-items:center;border-bottom:1px solid var(--border);
+    font-size:13px;
+  }
+  .reg-row:last-child{border-bottom:none;}
+  .reg-row.head{
+    background:#EFEAD9;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--slate-light);font-weight:600;padding-top:10px;padding-bottom:10px;
+  }
+  .reg-num{font-family:var(--mono);color:var(--slate-light);font-size:12px;}
+  .reg-stamp{
+    font-family:var(--mono);font-size:11px;border:1px solid currentColor;border-radius:4px;
+    padding:2px 6px;display:inline-block;transform:rotate(-1deg);white-space:nowrap;
+  }
+  .stamp-ok{color:var(--sage);}
+  .stamp-warn{color:var(--amber);}
+  .stamp-alert{color:var(--rust);}
+  .reg-subject{font-weight:500;color:var(--ink);}
+  .reg-meta{color:var(--slate-light);font-size:12px;margin-top:2px;}
+  .reg-file{font-family:var(--mono);font-size:12px;color:var(--slate);}
+  .reg-status{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;display:inline-block;white-space:nowrap;}
+  .status-pending{background:var(--amber-soft);color:var(--amber);}
+  .status-forwarded{background:var(--blue-soft);color:var(--blue);}
+  .status-completed{background:var(--sage-soft);color:var(--sage);}
+  .status-returned{background:var(--rust-soft);color:var(--rust);}
+  .reg-actions{display:flex;gap:6px;justify-content:flex-end;}
+  .icon-btn{background:none;border:none;cursor:pointer;color:var(--slate-light);font-size:15px;padding:2px 4px;}
+  .icon-btn:hover{color:var(--ink);}
+
+  .empty{padding:48px 20px;text-align:center;color:var(--slate-light);font-size:13px;}
+  .empty strong{display:block;color:var(--ink);font-family:var(--serif);font-size:16px;margin-bottom:6px;}
+
+  /* ---------- Drawer / form ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(28,43,74,.35);display:none;align-items:stretch;
+    justify-content:flex-end;z-index:50;
+  }
+  .overlay.open{display:flex;}
+  .drawer{
+    width:440px;max-width:92vw;background:var(--paper-raised);height:100%;padding:28px 26px;
+    overflow-y:auto;box-shadow:-8px 0 24px rgba(0,0,0,.12);position:relative;
+  }
+  .drawer h2{font-family:var(--serif);font-size:20px;color:var(--ink);margin:0 0 4px;}
+  .drawer .drawer-sub{font-size:12px;color:var(--slate-light);margin-bottom:20px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .field .hint{font-size:11px;color:var(--slate-light);margin-top:4px;}
+  .field input, .field select, .field textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--border-strong);border-radius:6px;
+    font-family:var(--sans);font-size:13px;background:#fff;color:var(--slate);
+  }
+  .field select:disabled, .field input:disabled{background:#EFEAD9;color:var(--slate-light);cursor:not-allowed;}
+  .field textarea{resize:vertical;min-height:60px;}
+  .drawer-actions{display:flex;gap:10px;margin-top:22px;}
+  .drawer-actions .btn{flex:1;}
+  .close-x{position:absolute;top:24px;right:26px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--slate-light);}
+
+  /* ---------- Reports ---------- */
+  .report-controls{
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--paper-raised);
+    border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:20px;
+  }
+  .report-controls label{font-size:12px;font-weight:600;color:var(--ink-soft);}
+  .report-controls select, .report-controls input{
+    padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-family:var(--sans);font-size:13px;
+  }
+  #reportOutput{background:#fff;border:1px solid var(--border);border-radius:10px;padding:30px 34px;display:none;}
+  .report-header{border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:20px;}
+  .report-org{font-size:12px;color:var(--slate-light);letter-spacing:.04em;text-transform:uppercase;}
+  .report-section{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .report-h1{font-family:var(--serif);font-size:22px;color:var(--ink);margin:8px 0 2px;}
+  .report-sub{font-size:11.5px;color:var(--slate-light);}
+  .report-summary{display:flex;gap:20px;margin:14px 0 22px;flex-wrap:wrap;}
+  .report-summary div{font-size:12px;}
+  .report-summary b{font-family:var(--serif);font-size:18px;display:block;color:var(--ink);}
+  .report-cat-title{font-family:var(--serif);font-size:16px;color:var(--ink);margin:22px 0 8px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+  table.report-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px;}
+  table.report-table th, table.report-table td{border:1px solid #C7BEA6;padding:5px 7px;text-align:left;vertical-align:top;}
+  table.report-table th{background:#EFEAD9;font-size:10px;text-transform:uppercase;letter-spacing:.03em;}
+  .report-empty{font-size:12px;color:var(--slate-light);font-style:italic;margin-bottom:10px;}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#F5F2EA;
+    padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:100;
+  }
+  .toast.show{opacity:1;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #reportOutput, #reportOutput *{visibility:visible;}
+    #reportOutput{position:absolute;left:0;top:0;width:100%;border:none;display:block !important;padding:0;}
+  }
+
+  @media (max-width: 880px){
+    .app{flex-direction:column;}
+    .sidebar{width:100%;height:auto;position:relative;}
+    .cards{grid-template-columns:repeat(2,1fr);}
+    .charts-row{grid-template-columns:1fr;}
+    .reg-row{grid-template-columns:1fr;gap:4px;}
+    .reg-row.head{display:none;}
+    .main{padding:20px;}
+    #reportOutput{padding:18px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-eyebrow">Department of Personnel &amp; Training</div>
+    <div class="login-title">AVD-II (B)</div>
+    <div class="login-sub">Sign in to the section case register.</div>
+    <div class="login-error" id="loginError">Incorrect username or password.</div>
+    <form id="loginForm">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="loginUser" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="loginPass" autocomplete="current-password" required>
+      </div>
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+  </div>
+</div>
+
+<div class="app" id="appRoot">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-eyebrow">Department of Personnel &amp; Training</div>
+      <div class="brand-title">AVD-II (B)<br>Case Register</div>
+      <div class="brand-sub">Litigation &amp; disciplinary case tracker</div>
+    </div>
+    <ul class="nav" id="navList"></ul>
+    <div class="sidebar-foot">
+      <div><span class="api-dot" id="apiDot"></span><span id="apiStatusText">Checking connection…</span></div>
+      <div style="margin-top:6px;">Data source: Google Sheets</div>
+      <button class="logout-btn" id="logoutBtn">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title" id="pageTitle">Overview</h1>
+        <div class="page-desc" id="pageDesc">All pending matters across the section, at a glance.</div>
+      </div>
+      <button class="btn" id="addBtn" style="display:none;">+ New entry</button>
+    </div>
+
+    <div class="cards" id="cards"></div>
+    <div class="charts-row" id="chartsRow"></div>
+
+    <div class="toolbar" id="toolbarWrap" style="display:none;">
+      <input class="search" id="searchInput" placeholder="Search by file no., computer no., or subject…">
+      <select class="filter" id="statusFilter">
+        <option value="">All statuses</option>
+      </select>
+    </div>
+
+    <div id="content"></div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="drawer">
+    <button class="close-x" id="closeDrawer">✕</button>
+    <h2 id="drawerTitle">New entry</h2>
+    <div class="drawer-sub" id="drawerSub"></div>
+    <form id="entryForm"></form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   LOGIN — fixed credentials as requested.
+   IMPORTANT: this is a screen gate only, not real security. The
+   username/password below live in this HTML file, so anyone who opens
+   "View Page Source" on the live site can read them directly — a login
+   screen implemented this way cannot be bypass-proof. Treat it as a
+   deterrent against casual access, not as protection for sensitive
+   data. Real protection has to come from (a) not sharing the dashboard
+   link outside the section, and (b) keeping the Google Sheet's own
+   sharing settings restricted, since that's where the actual case data
+   lives.
+   ===================================================================== */
+const CREDS = { username: "avd2admin", password: "Vigilance@123" };
+
+const loginScreen = document.getElementById("loginScreen");
+const appRoot = document.getElementById("appRoot");
+
+function showApp() {
+  loginScreen.style.display = "none";
+  appRoot.classList.add("open");
+  boot();
+}
+document.getElementById("loginForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const u = document.getElementById("loginUser").value.trim();
+  const p = document.getElementById("loginPass").value;
+  const err = document.getElementById("loginError");
+  if (u === CREDS.username && p === CREDS.password) {
+    sessionStorage.setItem("avd2_auth", "1");
+    err.style.display = "none";
+    showApp();
+  } else {
+    err.style.display = "block";
+  }
+});
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  sessionStorage.removeItem("avd2_auth");
+  location.reload();
+});
+
+/* =====================================================================
+   CONFIG — paste your Apps Script Web App /exec URL here once deployed.
+   Until you do, the dashboard runs in local demo mode (data is stored
+   only in this browser, via localStorage) so you can preview it.
+   ===================================================================== */
+const CONFIG = {
+  API_URL: "https://script.google.com/macros/s/AKfycbzndCo83Wm1kg69MRR8jkDl80IypkvsZAcMrAWaeQmxfizmU5TuZ4-83XRYbTbHtdKR/exec" // e.g. "https://script.google.com/macros/s/AKfycb.../exec"
+};
+
+/* ---------------------------------------------------------------------
+   Schema — defines fields, form inputs, and table columns per category.
+   showIf: {field, equals} hides a field unless another field currently
+   equals that value. To add/remove a plain field, edit the array only.
+   --------------------------------------------------------------------- */
+const LITIGATION_STATUSES = [
+  "Received and under process",
+  "File under submission for forwarding to DoLA",
+  "Forwarded to DoLA",
+  "Received from DoLA",
+  "Communicated to CBI"
+];
+function litigationFields() {
+  return [
+    { key: "Date of Receipt", label: "Date of receipt", type: "date", required: true },
+    { key: "Email Date", label: "E-mail date (from SLP Cell)", type: "date" },
+    { key: "Email Time", label: "E-mail time", type: "time" },
+    { key: "File No", label: "File no.", type: "text", required: true },
+    { key: "Computer No", label: "Computer no.", type: "text" },
+    { key: "RC No./Case No.", label: "RC No./Case No.", type: "text" },
+    { key: "Subject", label: "Subject", type: "textarea", required: true },
+    { key: "Status", label: "Status", type: "select", options: LITIGATION_STATUSES, default: "Received and under process" },
+    { key: "Date Communicated to CBI", label: "Date communicated to CBI", type: "date", showIf: { field: "Status", equals: "Communicated to CBI" } },
+    { key: "Remarks", label: "Remarks", type: "textarea" }
+  ];
+}
+
+const DISCIPLINARY_STAGES = [
+  "Case Received from CBI",
+  "Case Returned to CBI for non-compliance with the Checklist",
+  "Chargesheet under preparation",
+  "Chargesheet issued",
+  "Representation of CO sought",
+  "Representation of CO received",
+  "Names of IO and PO have been sought from CBI",
+  "IO and PO have been appointed",
+  "Inquiry in Progress",
+  "Request received from CBI for change of IO",
+  "Request received from CBI for change of PO",
+  "Inquiry report received",
+  "Representation of CO sought on Inquiry Report",
+  "Case sent to UPSC",
+  "UPSC's advice received",
+  "Representation of CO sought on UPSC's advice",
+  "Final Order issued with the approval of DA"
+];
+const DISCIPLINARY_STATUSES = ["Received and under process", "Returned", "Completed"];
+const RETURNED_STAGE = "Case Returned to CBI for non-compliance with the Checklist";
+
+const SCHEMAS = {
+  SLP: { label: "Special Leave Petitions", desc: "Requests for SLPs received from the SLP Cell.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES },
+  Appeals: { label: "Appeals (Lower Court / CBI Court)", desc: "Requests for appeals against Lower Court / CBI Court judgements.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES },
+  Withdrawal: { label: "Withdrawal from Prosecution", desc: "Requests for withdrawal from prosecution cases.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES },
+  Disciplinary: {
+    label: "Disciplinary Proceedings",
+    desc: "Disciplinary proceeding cases and their current stage.",
+    statusOptions: DISCIPLINARY_STATUSES,
+    fields: [
+      { key: "Date of Receipt", label: "Date of receipt", type: "date", required: true },
+      { key: "Checklist Compliance", label: "Complying with checklist?", type: "select", options: ["Yes", "No"], default: "Yes" },
+      { key: "Date of Return of Proposal", label: "Date of return of proposal", type: "date", showIf: { field: "Checklist Compliance", equals: "No" } },
+      { key: "Compliance Received from CBI", label: "Has the compliance been done by CBI?", type: "select", options: ["Pending", "Yes"], default: "Pending", showIf: { field: "Checklist Compliance", equals: "No" } },
+      { key: "Date of Receiving Compliance", label: "Date of receiving compliance", type: "date", showIf: { field: "Compliance Received from CBI", equals: "Yes" } },
+      { key: "File No", label: "File no.", type: "text", required: true },
+      { key: "Computer No", label: "Computer no.", type: "text" },
+      { key: "Subject", label: "Subject", type: "textarea", required: true },
+      { key: "Stage", label: "Stage of case", type: "select", options: DISCIPLINARY_STAGES, default: "Case Received from CBI" },
+      { key: "Date of IO Change Request", label: "Date of CBI request (change of IO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of IO" } },
+      { key: "Date of PO Change Request", label: "Date of CBI request (change of PO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of PO" } },
+      { key: "Status", label: "Status", type: "select", options: DISCIPLINARY_STATUSES, default: "Received and under process" },
+      { key: "Remarks", label: "Remarks", type: "textarea" }
+    ]
+  }
+};
+const CATS = Object.keys(SCHEMAS);
+const CAT_COLORS = { SLP: "#1C2B4A", Appeals: "#4A6B54", Withdrawal: "#93691E", Disciplinary: "#8C3B2E" };
+
+/* ---------------------------------------------------------------------
+   Data layer — talks to Apps Script if CONFIG.API_URL is set,
+   otherwise falls back to localStorage demo mode.
+   --------------------------------------------------------------------- */
+const DEMO_MODE = !CONFIG.API_URL;
+const LS_KEY = "avd2_case_register_demo";
+
+function demoStore() {
+  let s = localStorage.getItem(LS_KEY);
+  if (s) return JSON.parse(s);
+  const seed = {};
+  CATS.forEach(c => seed[c] = []);
+  localStorage.setItem(LS_KEY, JSON.stringify(seed));
+  return seed;
+}
+function demoSave(store) { localStorage.setItem(LS_KEY, JSON.stringify(store)); }
+
+async function apiList() {
+  if (DEMO_MODE) return demoStore();
+  const res = await fetch(CONFIG.API_URL + "?action=list");
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || "Failed to load");
+  return json.data;
+}
+async function apiAdd(sheet, data) {
+  if (DEMO_MODE) {
+    const store = demoStore();
+    data.ID = "R" + Date.now();
+    store[sheet].push(data);
+    demoSave(store);
+    return data;
+  }
+  const res = await fetch(CONFIG.API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "add", sheet, data })
+  });
+  return (await res.json()).data;
+}
+async function apiUpdate(sheet, id, data) {
+  if (DEMO_MODE) {
+    const store = demoStore();
+    const idx = store[sheet].findIndex(r => r.ID === id);
+    if (idx > -1) store[sheet][idx] = { ...store[sheet][idx], ...data };
+    demoSave(store);
+    return true;
+  }
+  await fetch(CONFIG.API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "update", sheet, id, data })
+  });
+  return true;
+}
+async function apiDelete(sheet, id) {
+  if (DEMO_MODE) {
+    const store = demoStore();
+    store[sheet] = store[sheet].filter(r => r.ID !== id);
+    demoSave(store);
+    return true;
+  }
+  await fetch(CONFIG.API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "delete", sheet, id })
+  });
+  return true;
+}
+
+/* ---------------------------------------------------------------------
+   App state
+   --------------------------------------------------------------------- */
+let DATA = {};
+let currentTab = "overview";
+let editingId = null;
+let searchTerm = "";
+let statusFilterVal = "";
+
+async function boot() {
+  const dot = document.getElementById("apiDot");
+  const statusText = document.getElementById("apiStatusText");
+  if (DEMO_MODE) {
+    statusText.textContent = "Demo mode — no Sheet connected";
+  } else {
+    dot.classList.add("live");
+    statusText.textContent = "Connected to Google Sheets";
+  }
+  try {
+    DATA = await apiList();
+  } catch (err) {
+    DATA = {}; CATS.forEach(c => DATA[c] = []);
+    showToast("Could not reach the API — check CONFIG.API_URL");
+  }
+  renderNav();
+  renderPage();
+}
+
+function renderNav() {
+  const nav = document.getElementById("navList");
+  const items = [{ key: "overview", label: "Overview" }, ...CATS.map(c => ({ key: c, label: SCHEMAS[c].label }))];
+  let html = items.map(it => {
+    const count = it.key === "overview" ? "" : `<span class="count">${(DATA[it.key]||[]).length}</span>`;
+    return `<li><button data-tab="${it.key}" class="${currentTab===it.key?'active':''}">${it.label}${count}</button></li>`;
+  }).join("");
+  html += `<li class="sep"></li><li><button data-tab="reports" class="${currentTab==='reports'?'active':''}">Reports</button></li>`;
+  nav.innerHTML = html;
+  nav.querySelectorAll("button").forEach(b => b.onclick = () => { currentTab = b.dataset.tab; searchTerm=""; statusFilterVal=""; renderNav(); renderPage(); });
+}
+
+function daysSince(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  const diff = Math.floor((new Date().setHours(0,0,0,0) - d.setHours(0,0,0,0)) / 86400000);
+  return diff;
+}
+function agingStamp(days) {
+  if (days === null) return "";
+  let cls = "stamp-ok", txt = days + "d";
+  if (days > 15) cls = "stamp-alert";
+  else if (days > 7) cls = "stamp-warn";
+  if (days === 0) txt = "today";
+  else if (days < 0) { txt = Math.abs(days) + "d ahead"; cls = "stamp-ok"; }
+  return `<span class="reg-stamp ${cls}">${txt}</span>`;
+}
+function statusClass(s) {
+  if (s === "Completed") return "status-completed";
+  if (s === "Returned") return "status-returned";
+  if (!s || s === "Received and under process") return "status-pending";
+  return "status-forwarded";
+}
+function statusBucket(s) {
+  if (s === "Completed") return "Completed";
+  if (s === "Returned") return "Returned";
+  return "In process";
+}
+
+/* ---------------------------------------------------------------------
+   Chart helpers — hand-rolled SVG, no external library / CDN dependency
+   --------------------------------------------------------------------- */
+function svgDonut(data, size) {
+  size = size || 128;
+  const thickness = 20;
+  const total = data.reduce((s,d)=>s+d.value,0);
+  const r = size/2 - thickness/2, cx = size/2, cy = size/2;
+  if (total <= 0) {
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"><circle cx="${cx}" cy="${cy}" r="${r}" stroke="#DCD5C4" stroke-width="${thickness}" fill="none"/></svg>`;
+  }
+  const nonZero = data.filter(d => d.value > 0);
+  if (nonZero.length === 1) {
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"><circle cx="${cx}" cy="${cy}" r="${r}" stroke="${nonZero[0].color}" stroke-width="${thickness}" fill="none"/></svg>`;
+  }
+  let cumulate = 0, paths = "";
+  data.forEach(d => {
+    if (d.value <= 0) return;
+    const startAngle = (cumulate/total) * 2*Math.PI - Math.PI/2;
+    cumulate += d.value;
+    const endAngle = (cumulate/total) * 2*Math.PI - Math.PI/2;
+    const x1 = cx + r*Math.cos(startAngle), y1 = cy + r*Math.sin(startAngle);
+    const x2 = cx + r*Math.cos(endAngle), y2 = cy + r*Math.sin(endAngle);
+    const largeArc = (endAngle-startAngle) > Math.PI ? 1 : 0;
+    paths += `<path d="M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}" stroke="${d.color}" stroke-width="${thickness}" fill="none"/>`;
+  });
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${paths}</svg>`;
+}
+function legendList(data) {
+  return `<ul class="legend">${data.map(d => `<li><span class="dot" style="background:${d.color}"></span><span class="lbl">${d.label}</span><span class="val">${d.value}</span></li>`).join("")}</ul>`;
+}
+function chartCard(title, bodyHtml) {
+  return `<div class="chart-card"><div class="chart-title">${title}</div><div class="chart-body">${bodyHtml}</div></div>`;
+}
+function svgBarChart(items, opts) {
+  opts = opts || {};
+  const w = opts.width || 300, h = opts.height || 130;
+  const max = Math.max(1, ...items.map(d => d.value));
+  const chartH = h - 30;
+  const gap = w / items.length;
+  const barW = Math.min(38, gap * 0.5);
+  let bars = "";
+  items.forEach((d, i) => {
+    const barH = (d.value / max) * chartH;
+    const x = i*gap + (gap-barW)/2;
+    const y = chartH - barH + 6;
+    bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW}" height="${Math.max(barH,1).toFixed(1)}" rx="3" fill="${d.color||'#1C2B4A'}"/>`;
+    bars += `<text x="${(x+barW/2).toFixed(1)}" y="${(y-6).toFixed(1)}" font-size="10" text-anchor="middle" fill="#3A3F4B" font-family="IBM Plex Mono, monospace">${d.value}</text>`;
+    bars += `<text x="${(x+barW/2).toFixed(1)}" y="${h-8}" font-size="10" text-anchor="middle" fill="#767C8C">${d.label}</text>`;
+  });
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${bars}</svg>`;
+}
+function monthlyCounts(rows, n) {
+  n = n || 6;
+  const now = new Date();
+  const buckets = [];
+  for (let i = n-1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    buckets.push({ label: d.toLocaleString('en-IN', { month: 'short' }), year: d.getFullYear(), month: d.getMonth(), value: 0, color: "#1C2B4A" });
+  }
+  rows.forEach(r => {
+    const dr = r["Date of Receipt"]; if (!dr) return;
+    const d = new Date(dr); if (isNaN(d)) return;
+    const b = buckets.find(b => b.year === d.getFullYear() && b.month === d.getMonth());
+    if (b) b.value++;
+  });
+  return buckets;
+}
+
+/* ---------------------------------------------------------------------
+   Page rendering
+   --------------------------------------------------------------------- */
+function renderPage() {
+  const title = document.getElementById("pageTitle");
+  const desc = document.getElementById("pageDesc");
+  const addBtn = document.getElementById("addBtn");
+  const toolbarWrap = document.getElementById("toolbarWrap");
+  const content = document.getElementById("content");
+  const cards = document.getElementById("cards");
+  const chartsRow = document.getElementById("chartsRow");
+
+  if (currentTab === "reports") {
+    title.textContent = "Reports";
+    desc.textContent = "Generate a printable report for one category or the whole section.";
+    addBtn.style.display = "none";
+    toolbarWrap.style.display = "none";
+    cards.innerHTML = ""; chartsRow.innerHTML = "";
+    content.innerHTML = renderReportsPage();
+    attachReportHandlers();
+    return;
+  }
+
+  if (currentTab === "overview") {
+    title.textContent = "Overview";
+    desc.textContent = "All pending matters across the section, at a glance.";
+    addBtn.style.display = "none";
+    toolbarWrap.style.display = "none";
+    renderOverviewCards();
+    renderOverviewCharts();
+    content.innerHTML = renderOverviewLists();
+    attachRowHandlers();
+    return;
+  }
+
+  const schema = SCHEMAS[currentTab];
+  title.textContent = schema.label;
+  desc.textContent = schema.desc;
+  addBtn.style.display = "inline-block";
+  addBtn.onclick = () => openDrawer(currentTab, null);
+  toolbarWrap.style.display = "flex";
+
+  const statusFilter = document.getElementById("statusFilter");
+  statusFilter.innerHTML = `<option value="">All statuses</option>` + schema.statusOptions.map(s => `<option value="${s}">${s}</option>`).join("");
+
+  renderCategoryCards(currentTab);
+  renderCategoryCharts(currentTab);
+  content.innerHTML = renderRegister(currentTab);
+  attachRowHandlers();
+}
+
+function renderOverviewCards() {
+  const cards = document.getElementById("cards");
+  let total = 0, pending = 0, overdue = 0, thisWeek = 0;
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+  CATS.forEach(c => {
+    (DATA[c] || []).forEach(r => {
+      total++;
+      if ((r.Status || "") !== "Completed") pending++;
+      const d = daysSince(r["Date of Receipt"]);
+      if (d !== null && d > 15 && (r.Status || "") !== "Completed") overdue++;
+      if (r["Date of Receipt"] && new Date(r["Date of Receipt"]) >= weekAgo) thisWeek++;
+    });
+  });
+  cards.innerHTML = `
+    <div class="card"><div class="card-label">Total cases</div><div class="card-value">${total}</div><div class="card-hint">Across all 4 categories</div></div>
+    <div class="card"><div class="card-label">Pending</div><div class="card-value">${pending}</div><div class="card-hint">Not yet completed</div></div>
+    <div class="card"><div class="card-label">Overdue &gt;15 days</div><div class="card-value ${overdue?'alert':''}">${overdue}</div><div class="card-hint">Needs attention</div></div>
+    <div class="card"><div class="card-label">Received this week</div><div class="card-value">${thisWeek}</div><div class="card-hint">Last 7 days</div></div>
+  `;
+}
+
+function renderOverviewCharts() {
+  const chartsRow = document.getElementById("chartsRow");
+  const barData = CATS.map(c => ({ label: SCHEMAS[c].label.split(" ")[0], value: (DATA[c]||[]).filter(r => (r.Status||"") !== "Completed").length, color: CAT_COLORS[c] }));
+  let completed=0, returned=0, inprocess=0;
+  CATS.forEach(c => (DATA[c]||[]).forEach(r => {
+    const b = statusBucket(r.Status);
+    if (b === "Completed") completed++; else if (b === "Returned") returned++; else inprocess++;
+  }));
+  const donutData = [
+    { label: "In process", value: inprocess, color: "#93691E" },
+    { label: "Completed", value: completed, color: "#4A6B54" },
+    { label: "Returned", value: returned, color: "#8C3B2E" }
+  ];
+  chartsRow.innerHTML =
+    chartCard("Pending cases by category", svgBarChart(barData, { width: 300, height: 140 })) +
+    chartCard("Status across all categories", svgDonut(donutData) + legendList(donutData));
+}
+
+function renderCategoryCards(cat) {
+  const cards = document.getElementById("cards");
+  const rows = DATA[cat] || [];
+  const pending = rows.filter(r => (r.Status||"") !== "Completed").length;
+  const overdue = rows.filter(r => { const d = daysSince(r["Date of Receipt"]); return d!==null && d>15 && (r.Status||"")!=="Completed"; }).length;
+  const completed = rows.filter(r => r.Status === "Completed").length;
+  cards.innerHTML = `
+    <div class="card"><div class="card-label">Total</div><div class="card-value">${rows.length}</div></div>
+    <div class="card"><div class="card-label">Pending</div><div class="card-value">${pending}</div></div>
+    <div class="card"><div class="card-label">Overdue &gt;15 days</div><div class="card-value ${overdue?'alert':''}">${overdue}</div></div>
+    <div class="card"><div class="card-label">Completed</div><div class="card-value">${completed}</div></div>
+  `;
+}
+
+function renderCategoryCharts(cat) {
+  const chartsRow = document.getElementById("chartsRow");
+  const rows = DATA[cat] || [];
+  const schema = SCHEMAS[cat];
+  const palette = ["#1C2B4A","#2E5A8C","#93691E","#4A6B54","#8C3B2E"];
+  const statusData = schema.statusOptions.map((s, i) => ({ label: s, value: rows.filter(r => (r.Status||schema.statusOptions[0]) === s).length, color: palette[i % palette.length] }));
+  const monthly = monthlyCounts(rows).map(b => ({ ...b, color: CAT_COLORS[cat] }));
+  chartsRow.innerHTML =
+    chartCard("Status breakdown", svgDonut(statusData) + legendList(statusData.filter(d=>true))) +
+    chartCard("Receipts — last 6 months", svgBarChart(monthly, { width: 300, height: 140 }));
+}
+
+function renderOverviewLists() {
+  return CATS.map(c => {
+    const rows = (DATA[c] || []).filter(r => (r.Status || "") !== "Completed")
+      .sort((a,b) => new Date(a["Date of Receipt"]) - new Date(b["Date of Receipt"])).slice(0, 5);
+    return `
+      <div style="margin-bottom:26px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+          <h3 style="font-family:var(--serif);font-size:17px;color:var(--ink);margin:0;">${SCHEMAS[c].label}</h3>
+          <button class="btn ghost small" data-goto="${c}">View all (${(DATA[c]||[]).length})</button>
+        </div>
+        <div class="register">
+          ${rows.length ? rows.map((r,i) => registerRow(c, r, i)).join("") : `<div class="empty">No pending entries.</div>`}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function registerRow(cat, r, idx) {
+  const d = daysSince(r["Date of Receipt"]);
+  const statusLabel = r.Status || SCHEMAS[cat].statusOptions[0];
+  return `
+    <div class="reg-row" data-cat="${cat}" data-id="${r.ID}">
+      <div class="reg-num">${idx+1}.</div>
+      <div>${agingStamp(d)}</div>
+      <div>
+        <div class="reg-subject">${escapeHtml(r.Subject || "(no subject)")}</div>
+        <div class="reg-meta">Received ${r["Date of Receipt"] || "—"}${cat==="Disciplinary" && r.Stage ? " · " + escapeHtml(r.Stage) : ""}${cat!=="Disciplinary" && r["RC No./Case No."] ? " · RC/Case No. " + escapeHtml(r["RC No./Case No."]) : ""}</div>
+      </div>
+      <div class="reg-file">${escapeHtml(r["File No"] || "—")}</div>
+      <div class="reg-file">${escapeHtml(r["Computer No"] || "—")}</div>
+      <div><span class="reg-status ${statusClass(statusLabel)}">${escapeHtml(statusLabel)}</span></div>
+      <div class="reg-actions">
+        <button class="icon-btn edit" title="Edit">✎</button>
+        <button class="icon-btn del" title="Delete">🗑</button>
+      </div>
+    </div>`;
+}
+
+function renderRegister(cat) {
+  let rows = [...(DATA[cat] || [])];
+  if (searchTerm) {
+    const t = searchTerm.toLowerCase();
+    rows = rows.filter(r => (r["File No"]||"").toLowerCase().includes(t) || (r["Computer No"]||"").toLowerCase().includes(t) || (r.Subject||"").toLowerCase().includes(t));
+  }
+  if (statusFilterVal) rows = rows.filter(r => (r.Status||SCHEMAS[cat].statusOptions[0]) === statusFilterVal);
+  rows.sort((a,b) => new Date(b["Date of Receipt"]) - new Date(a["Date of Receipt"]));
+
+  if (!rows.length) {
+    return `<div class="register"><div class="empty"><strong>No entries yet</strong>Click "New entry" to log the first case in this register.</div></div>`;
+  }
+  return `<div class="register">
+    <div class="reg-row head"><div></div><div>Aging</div><div>Subject</div><div>File No.</div><div>Computer No.</div><div>Status</div><div></div></div>
+    ${rows.map((r,i) => registerRow(cat, r, i)).join("")}
+  </div>`;
+}
+
+function attachRowHandlers() {
+  document.querySelectorAll(".reg-row[data-id]").forEach(row => {
+    const cat = row.dataset.cat, id = row.dataset.id;
+    const rec = (DATA[cat]||[]).find(r => r.ID === id);
+    const editBtn = row.querySelector(".edit");
+    const delBtn = row.querySelector(".del");
+    if (editBtn) editBtn.onclick = () => openDrawer(cat, rec);
+    if (delBtn) delBtn.onclick = () => confirmDelete(cat, id);
+  });
+  document.querySelectorAll("[data-goto]").forEach(b => b.onclick = () => { currentTab = b.dataset.goto; renderNav(); renderPage(); });
+  const s = document.getElementById("searchInput");
+  const f = document.getElementById("statusFilter");
+  if (currentTab !== "overview" && currentTab !== "reports") {
+    s.value = searchTerm; f.value = statusFilterVal;
+    s.oninput = () => { searchTerm = s.value; document.getElementById("content").innerHTML = renderRegister(currentTab); attachRowHandlers(); };
+    f.onchange = () => { statusFilterVal = f.value; document.getElementById("content").innerHTML = renderRegister(currentTab); attachRowHandlers(); };
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+/* ---------------------------------------------------------------------
+   Drawer (add / edit form) — built dynamically from SCHEMAS, with
+   conditional show/hide, plus the special checklist→stage/status lock
+   for Disciplinary Proceedings.
+   --------------------------------------------------------------------- */
+function openDrawer(cat, record) {
+  editingId = record ? record.ID : null;
+  const schema = SCHEMAS[cat];
+  document.getElementById("drawerTitle").textContent = record ? "Edit entry" : "New entry";
+  document.getElementById("drawerSub").textContent = schema.label;
+  const form = document.getElementById("entryForm");
+
+  form.innerHTML = schema.fields.map(f => {
+    const val = record ? (record[f.key] ?? "") : (f.default || "");
+    let inputHtml;
+    if (f.type === "select") {
+      inputHtml = `<select name="${f.key}">${f.options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join("")}</select>`;
+    } else if (f.type === "textarea") {
+      inputHtml = `<textarea name="${f.key}" ${f.required?'required':''}>${escapeHtml(val)}</textarea>`;
+    } else {
+      inputHtml = `<input type="${f.type}" name="${f.key}" value="${escapeHtml(val)}" ${f.required?'required':''}>`;
+    }
+    return `<div class="field" data-fieldkey="${f.key}"><label>${f.label}</label>${inputHtml}</div>`;
+  }).join("") + `
+    <div class="drawer-actions">
+      <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+      <button type="submit" class="btn">${record ? "Save changes" : "Add entry"}</button>
+    </div>`;
+
+  function refresh() {
+    applyConditionals(form, schema);
+    if (cat === "Disciplinary") applyDisciplinaryLogic(form);
+  }
+  refresh();
+  form.addEventListener("change", refresh);
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const data = {};
+    schema.fields.forEach(f => { const el = form.elements[f.key]; data[f.key] = el ? el.value : ""; });
+    try {
+      if (editingId) {
+        await apiUpdate(cat, editingId, data);
+        const idx = DATA[cat].findIndex(r => r.ID === editingId);
+        DATA[cat][idx] = { ...DATA[cat][idx], ...data };
+        showToast("Entry updated");
+      } else {
+        const saved = await apiAdd(cat, data);
+        DATA[cat].push(saved);
+        showToast("Entry added");
+      }
+      closeDrawer();
+      renderNav();
+      renderPage();
+    } catch (err) {
+      showToast("Save failed — check connection");
+    }
+  };
+  document.getElementById("cancelBtn").onclick = closeDrawer;
+  document.getElementById("overlay").classList.add("open");
+}
+
+function applyConditionals(form, schema) {
+  const values = {};
+  schema.fields.forEach(f => { const el = form.elements[f.key]; if (el) values[f.key] = el.value; });
+  form.querySelectorAll(".field[data-fieldkey]").forEach(wrapper => {
+    const key = wrapper.dataset.fieldkey;
+    const f = schema.fields.find(x => x.key === key);
+    if (!f) return;
+    const show = f.showIf ? values[f.showIf.field] === f.showIf.equals : true;
+    wrapper.style.display = show ? "" : "none";
+    const input = form.elements[key];
+    if (input) { if (!show) input.removeAttribute("required"); else if (f.required) input.setAttribute("required", ""); }
+  });
+}
+
+function applyDisciplinaryLogic(form) {
+  const checklist = form.elements["Checklist Compliance"].value;
+  const complianceField = form.elements["Compliance Received from CBI"];
+  const complianceVal = complianceField ? complianceField.value : "";
+  const stageField = form.elements["Stage"];
+  const statusField = form.elements["Status"];
+  const stageWrapper = form.querySelector('[data-fieldkey="Stage"]');
+  const statusWrapper = form.querySelector('[data-fieldkey="Status"]');
+
+  const locked = checklist === "No" && complianceVal !== "Yes";
+  let stageHint = stageWrapper.querySelector(".hint");
+  let statusHint = statusWrapper.querySelector(".hint");
+
+  if (locked) {
+    stageField.value = RETURNED_STAGE;
+    stageField.disabled = true;
+    statusField.value = "Returned";
+    statusField.disabled = true;
+    if (!stageHint) { stageHint = document.createElement("div"); stageHint.className = "hint"; stageWrapper.appendChild(stageHint); }
+    stageHint.textContent = "Locked — set automatically until CBI's compliance is received.";
+    if (!statusHint) { statusHint = document.createElement("div"); statusHint.className = "hint"; statusWrapper.appendChild(statusHint); }
+    statusHint.textContent = "Locked — set automatically until CBI's compliance is received.";
+  } else {
+    if (stageField.disabled) {
+      stageField.disabled = false;
+      if (stageField.value === RETURNED_STAGE) stageField.value = "Case Received from CBI";
+    }
+    if (statusField.disabled) {
+      statusField.disabled = false;
+      if (statusField.value === "Returned") statusField.value = "Received and under process";
+    }
+    if (stageHint) stageHint.remove();
+    if (statusHint) statusHint.remove();
+  }
+}
+
+function closeDrawer() { document.getElementById("overlay").classList.remove("open"); editingId = null; }
+document.getElementById("closeDrawer").onclick = closeDrawer;
+document.getElementById("overlay").onclick = (e) => { if (e.target.id === "overlay") closeDrawer(); };
+
+async function confirmDelete(cat, id) {
+  if (!confirm("Delete this entry? This cannot be undone.")) return;
+  await apiDelete(cat, id);
+  DATA[cat] = DATA[cat].filter(r => r.ID !== id);
+  renderNav();
+  renderPage();
+  showToast("Entry deleted");
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* ---------------------------------------------------------------------
+   Reports
+   --------------------------------------------------------------------- */
+function renderReportsPage() {
+  return `
+    <div class="report-controls">
+      <div>
+        <label>Report</label><br>
+        <select id="reportType">
+          <option value="SLP">Report for SLP</option>
+          <option value="Appeals">Report for Appeals</option>
+          <option value="Withdrawal">Report for Withdrawal from Prosecution</option>
+          <option value="Disciplinary">Report for Disciplinary Proceedings</option>
+          <option value="complete">Complete Report (all categories)</option>
+        </select>
+      </div>
+      <div><label>From</label><br><input type="date" id="reportFrom"></div>
+      <div><label>To</label><br><input type="date" id="reportTo"></div>
+      <button class="btn" id="generateReportBtn" style="align-self:flex-end;">Generate report</button>
+      <button class="btn ghost" id="printReportBtn" style="align-self:flex-end;display:none;">Print / Save as PDF</button>
+    </div>
+    <div id="reportOutput"></div>
+  `;
+}
+
+function attachReportHandlers() {
+  document.getElementById("generateReportBtn").onclick = () => {
+    const type = document.getElementById("reportType").value;
+    const from = document.getElementById("reportFrom").value;
+    const to = document.getElementById("reportTo").value;
+    const out = document.getElementById("reportOutput");
+    out.innerHTML = buildReport(type, from, to);
+    out.style.display = "block";
+    document.getElementById("printReportBtn").style.display = "inline-block";
+  };
+  document.getElementById("printReportBtn").onclick = () => window.print();
+}
+
+function inRange(dateStr, from, to) {
+  if (!dateStr) return !from && !to ? true : false;
+  const d = new Date(dateStr);
+  if (from && d < new Date(from)) return false;
+  if (to && d > new Date(to)) return false;
+  return true;
+}
+
+function buildReport(type, from, to) {
+  const cats = type === "complete" ? CATS : [type];
+  const title = type === "complete" ? "Complete Report — All Categories" : "Report for " + SCHEMAS[type].label;
+  const rangeText = (from || to) ? ` &middot; ${from || "start"} to ${to || "today"}` : " &middot; all dates";
+
+  let summary = `<div class="report-summary">`;
+  cats.forEach(c => {
+    const rows = (DATA[c]||[]).filter(r => inRange(r["Date of Receipt"], from, to));
+    summary += `<div><b>${rows.length}</b>${SCHEMAS[c].label}</div>`;
+  });
+  summary += `</div>`;
+
+  let body = "";
+  cats.forEach(c => {
+    const schema = SCHEMAS[c];
+    const rows = (DATA[c]||[]).filter(r => inRange(r["Date of Receipt"], from, to))
+      .sort((a,b) => new Date(a["Date of Receipt"]) - new Date(b["Date of Receipt"]));
+    body += `<div class="report-cat-title">${schema.label} (${rows.length})</div>`;
+    if (!rows.length) { body += `<div class="report-empty">No entries in this range.</div>`; return; }
+    const cols = schema.fields.map(f => f.key);
+    body += `<table class="report-table"><thead><tr><th>#</th>${cols.map(k=>`<th>${k}</th>`).join("")}</tr></thead><tbody>`;
+    rows.forEach((r,i) => {
+      body += `<tr><td>${i+1}</td>${cols.map(k => `<td>${escapeHtml(r[k]||"—")}</td>`).join("")}</tr>`;
+    });
+    body += `</tbody></table>`;
+  });
+
+  return `
+    <div class="report-header">
+      <div class="report-org">Department of Personnel &amp; Training</div>
+      <div class="report-section">AVD-II (B)</div>
+      <div class="report-h1">${title}</div>
+      <div class="report-sub">Generated on ${new Date().toLocaleString('en-IN')}${rangeText}</div>
+    </div>
+    ${summary}
+    ${body}
+  `;
+}
+
+/* ---------------------------------------------------------------------
+   Startup
+   --------------------------------------------------------------------- */
+if (sessionStorage.getItem("avd2_auth") === "1") showApp();
+</script>
+</body>
+</html>
