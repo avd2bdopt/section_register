@@ -73,14 +73,16 @@
   .nav li + li{margin-top:4px;}
   .nav li.sep{border-top:1px solid rgba(255,255,255,.12);margin:14px 0 10px;padding-top:4px;}
   .nav button{
-    width:100%;text-align:left;background:none;border:none;color:#D9DEEE;
-    padding:10px 12px;border-radius:6px;font-family:var(--sans);font-size:14px;
-    cursor:pointer;display:flex;justify-content:space-between;align-items:center;
-    transition:background .15s ease;
+    width:100%;text-align:left;background:none;border:none;border-left:3px solid transparent;color:#D9DEEE;
+    padding:10px 12px 10px 9px;border-radius:6px;font-family:var(--sans);font-size:14px;
+    cursor:pointer;display:flex;align-items:center;gap:9px;
+    transition:background .15s ease, border-color .15s ease;
   }
   .nav button:hover{background:rgba(255,255,255,.07);}
-  .nav button.active{background:#EDE9DD;color:var(--ink);font-weight:600;}
-  .nav .count{font-family:var(--mono);font-size:11px;opacity:.75;}
+  .nav button.active{background:#EDE9DD;color:var(--ink);font-weight:600;border-left-color:var(--rust);}
+  .nav-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .nav-label{flex:1;}
+  .nav .count{font-family:var(--mono);font-size:11px;opacity:.75;margin-left:auto;}
   .nav button.active .count{opacity:.6;}
 
   .sidebar-foot{margin-top:32px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:#8B96B6;line-height:1.6;}
@@ -97,8 +99,10 @@
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
   .card{
     background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;
-    padding:16px 18px;
+    padding:16px 18px;box-shadow:0 1px 2px rgba(28,43,74,.05);
+    transition:box-shadow .15s ease, transform .15s ease;
   }
+  .card:hover{box-shadow:0 6px 16px rgba(28,43,74,.09);transform:translateY(-1px);}
   .card-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;}
   .card-value{font-family:var(--serif);font-size:30px;color:var(--ink);margin-top:6px;}
   .card-value.alert{color:var(--rust);}
@@ -106,7 +110,7 @@
 
   /* ---------- Charts ---------- */
   .charts-row{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-bottom:24px;}
-  .chart-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .chart-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:16px 18px;box-shadow:0 1px 2px rgba(28,43,74,.05);}
   .chart-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;margin-bottom:10px;}
   .chart-body{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
   .legend{list-style:none;padding:0;margin:0;font-size:12px;}
@@ -118,8 +122,9 @@
   /* ---------- Toolbar ---------- */
   .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
   .search{
-    flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border-strong);border-radius:7px;
-    font-family:var(--sans);font-size:13px;background:var(--paper-raised);
+    flex:1;min-width:200px;padding:9px 12px 9px 34px;border:1px solid var(--border-strong);border-radius:7px;
+    font-family:var(--sans);font-size:13px;background:var(--paper-raised) no-repeat 11px center;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23767C8C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
   }
   select.filter{
     padding:9px 10px;border:1px solid var(--border-strong);border-radius:7px;
@@ -128,8 +133,11 @@
   .btn{
     padding:9px 16px;border-radius:7px;border:1px solid var(--ink);background:var(--ink);color:#F5F2EA;
     font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
+    display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 2px rgba(28,43,74,.12);
+    transition:background .15s ease, box-shadow .15s ease, transform .15s ease;
   }
-  .btn:hover{background:var(--ink-soft);}
+  .btn:hover{background:var(--ink-soft);box-shadow:0 4px 12px rgba(28,43,74,.18);transform:translateY(-1px);}
+  .btn svg{width:14px;height:14px;flex-shrink:0;}
   .btn.ghost{background:transparent;color:var(--ink);border-color:var(--border-strong);}
   .btn.ghost:hover{background:#EEE9DA;}
   .btn.small{padding:5px 10px;font-size:12px;}
@@ -137,12 +145,13 @@
   .btn.danger:hover{background:var(--rust-soft);}
 
   /* ---------- Register / table ---------- */
-  .register{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--paper-raised);}
+  .register{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--paper-raised);box-shadow:0 1px 2px rgba(28,43,74,.05);}
   .reg-row{
-    display:grid;grid-template-columns:36px 100px 1fr 130px 130px 150px 80px;
+    display:grid;grid-template-columns:36px 100px 1fr 130px 130px 150px 88px;
     gap:10px;padding:13px 16px;align-items:center;border-bottom:1px solid var(--border);
-    font-size:13px;
+    font-size:13px;transition:background .12s ease;
   }
+  .reg-row:hover{background:#F4F0E4;}
   .reg-row:last-child{border-bottom:none;}
   .reg-row.head{
     background:#EFEAD9;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
@@ -166,9 +175,15 @@
   .status-returned{background:var(--rust-soft);color:var(--rust);}
   .status-btn{background:none;border:none;padding:0;cursor:pointer;}
   .status-btn:hover .reg-status{box-shadow:0 0 0 2px rgba(28,43,74,.15);}
-  .reg-actions{display:flex;gap:6px;justify-content:flex-end;}
-  .icon-btn{background:none;border:none;cursor:pointer;color:var(--slate-light);font-size:15px;padding:2px 4px;}
-  .icon-btn:hover{color:var(--ink);}
+  .reg-actions{display:flex;gap:4px;justify-content:flex-end;}
+  .icon-btn{
+    background:none;border:none;cursor:pointer;color:var(--slate-light);
+    width:29px;height:29px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;
+    transition:background .15s ease, color .15s ease;
+  }
+  .icon-btn svg{width:15px;height:15px;display:block;}
+  .icon-btn:hover{color:var(--ink);background:#EFEAD9;}
+  .icon-btn.del:hover{color:var(--rust);background:var(--rust-soft);}
 
   .empty{padding:48px 20px;text-align:center;color:var(--slate-light);font-size:13px;}
   .empty strong{display:block;color:var(--ink);font-family:var(--serif);font-size:16px;margin-bottom:6px;}
@@ -196,7 +211,8 @@
   .field textarea{resize:vertical;min-height:60px;}
   .drawer-actions{display:flex;gap:10px;margin-top:22px;}
   .drawer-actions .btn{flex:1;}
-  .close-x{position:absolute;top:24px;right:26px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--slate-light);}
+  .close-x{position:absolute;top:24px;right:26px;background:none;border:none;cursor:pointer;color:var(--slate-light);display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;transition:background .15s ease,color .15s ease;}
+  .close-x:hover{color:var(--ink);background:#EFEAD9;}
 
   /* ---------- Reports ---------- */
   .report-controls{
@@ -290,7 +306,7 @@
         <h1 class="page-title" id="pageTitle">Overview</h1>
         <div class="page-desc" id="pageDesc">All pending matters across the section, at a glance.</div>
       </div>
-      <button class="btn" id="addBtn" style="display:none;">+ New entry</button>
+      <button class="btn" id="addBtn" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span>New entry</span></button>
     </div>
 
     <div class="cards" id="cards"></div>
@@ -309,7 +325,7 @@
 
 <div class="overlay" id="overlay">
   <div class="drawer">
-    <button class="close-x" id="closeDrawer">✕</button>
+    <button class="close-x" id="closeDrawer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     <h2 id="drawerTitle">New entry</h2>
     <div class="drawer-sub" id="drawerSub"></div>
     <form id="entryForm"></form>
@@ -445,6 +461,8 @@ const SCHEMAS = {
 };
 const CATS = Object.keys(SCHEMAS);
 const CAT_COLORS = { SLP: "#1C2B4A", Appeals: "#4A6B54", Withdrawal: "#93691E", Disciplinary: "#8C3B2E" };
+const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 
 /* ---------------------------------------------------------------------
    Data layer — talks to Apps Script if CONFIG.API_URL is set,
@@ -554,9 +572,10 @@ function renderNav() {
   const items = [{ key: "overview", label: "Overview" }, ...CATS.map(c => ({ key: c, label: SCHEMAS[c].label }))];
   let html = items.map(it => {
     const count = it.key === "overview" ? "" : `<span class="count">${(DATA[it.key]||[]).length}</span>`;
-    return `<li><button data-tab="${it.key}" class="${currentTab===it.key?'active':''}">${it.label}${count}</button></li>`;
+    const dot = CAT_COLORS[it.key] ? `<span class="nav-dot" style="background:${CAT_COLORS[it.key]}"></span>` : `<span class="nav-dot" style="background:transparent"></span>`;
+    return `<li><button data-tab="${it.key}" class="${currentTab===it.key?'active':''}">${dot}<span class="nav-label">${it.label}</span>${count}</button></li>`;
   }).join("");
-  html += `<li class="sep"></li><li><button data-tab="reports" class="${currentTab==='reports'?'active':''}">Reports</button></li>`;
+  html += `<li class="sep"></li><li><button data-tab="reports" class="${currentTab==='reports'?'active':''}"><span class="nav-dot" style="background:transparent"></span><span class="nav-label">Reports</span></button></li>`;
   nav.innerHTML = html;
   nav.querySelectorAll("button").forEach(b => b.onclick = () => { currentTab = b.dataset.tab; searchTerm=""; statusFilterVal=""; renderNav(); renderPage(); });
 }
@@ -806,8 +825,8 @@ function registerRow(cat, r, idx) {
       <div class="reg-file">${escapeHtml(r["Computer No"] || "—")}</div>
       <div><button class="status-btn" data-cat="${cat}" data-id="${r.ID}" title="Update status"><span class="reg-status ${statusClass(statusLabel)}">${escapeHtml(statusLabel)}</span></button></div>
       <div class="reg-actions">
-        <button class="icon-btn edit" title="Edit">✎</button>
-        <button class="icon-btn del" title="Delete">🗑</button>
+        <button class="icon-btn edit" title="Edit">${ICON_EDIT}</button>
+        <button class="icon-btn del" title="Delete">${ICON_TRASH}</button>
       </div>
     </div>`;
 }
