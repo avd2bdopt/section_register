@@ -530,13 +530,19 @@ async function boot() {
   if (DEMO_MODE) {
     statusText.textContent = "Demo mode — no Sheet connected";
   } else {
-    dot.classList.add("live");
-    statusText.textContent = "Connected to Google Sheets";
+    statusText.textContent = "Connecting to Google Sheets…";
   }
   try {
     DATA = await apiList();
+    if (!DEMO_MODE) {
+      dot.classList.add("live");
+      statusText.textContent = "Connected to Google Sheets";
+    }
   } catch (err) {
     DATA = {}; CATS.forEach(c => DATA[c] = []);
+    if (!DEMO_MODE) {
+      statusText.textContent = "Connection failed — see below";
+    }
     showToast("Could not reach the API — check CONFIG.API_URL");
   }
   renderNav();
