@@ -402,7 +402,7 @@ function litigationFields() {
     { key: "Date of Receipt", label: "Date of receipt", type: "date", required: true },
     { key: "Email Date", label: "E-mail date (from SLP Cell)", type: "date" },
     { key: "Email Time", label: "E-mail time", type: "time" },
-    { key: "File No", label: "File no.", type: "text", required: true },
+    { key: "File No", label: "File no.", type: "text" },
     { key: "Computer No", label: "Computer no.", type: "text" },
     { key: "RC No./Case No.", label: "RC No./Case No.", type: "text" },
     { key: "Subject", label: "Subject", type: "textarea", required: true },
@@ -434,6 +434,56 @@ const DISCIPLINARY_STAGES = [
 const DISCIPLINARY_STATUSES = ["Received and under process", "Returned", "Completed"];
 const RETURNED_STAGE = "Case Returned to CBI for non-compliance with the Checklist";
 
+/* ---------------------------------------------------------------------
+   Disciplinary status-report bucketing — maps each Stage to "who the
+   case is presently pending with" (DoPT / CBI / IA / UPSC / CO), the
+   same grouping used in the official AVD-II(B) status report. A case
+   marked "Under stay" is bucketed as Stayed regardless of its stage.
+   Final Order stage is treated as closed and excluded from the report.
+   This mapping is a judgment call on my part — tell me if any stage
+   should sit in a different bucket and I'll adjust it.
+   --------------------------------------------------------------------- */
+const STAGE_TO_BUCKET = {
+  "Case Received from CBI": "DoPT",
+  "Case Returned to CBI for non-compliance with the Checklist": "CBI",
+  "Chargesheet under preparation": "DoPT",
+  "Chargesheet issued": "DoPT",
+  "Representation of CO sought": "CO",
+  "Representation of CO received": "DoPT",
+  "Names of IO and PO have been sought from CBI": "CBI",
+  "IO and PO have been appointed": "IA",
+  "Inquiry in Progress": "IA",
+  "Request received from CBI for change of IO": "DoPT",
+  "Request received from CBI for change of PO": "DoPT",
+  "Inquiry report received": "DoPT",
+  "Representation of CO sought on Inquiry Report": "CO",
+  "Case sent to UPSC": "UPSC",
+  "UPSC's advice received": "DoPT",
+  "Representation of CO sought on UPSC's advice": "CO",
+  "Final Order issued with the approval of DA": null
+};
+const BUCKET_ORDER = ["DoPT", "CBI", "IA", "UPSC", "CO", "Stayed"];
+const BUCKET_LABELS = {
+  DoPT: "Pending with DoPT",
+  CBI: "Pending with CBI",
+  IA: "Pending with Inquiry Authority (IA)",
+  UPSC: "Pending with UPSC",
+  CO: "Pending with Charged Officer (CO)",
+  Stayed: "Cases Stayed by CAT / High Court"
+};
+function disciplinaryBucket(r) {
+  if ((r["Under Stay (CAT/High Court)"] || "No") === "Yes") return "Stayed";
+  const mapped = STAGE_TO_BUCKET[r.Stage];
+  if (mapped === undefined) return "DoPT";
+  return mapped;
+}
+function formatDDMMYYYY(d) {
+  d = d ? new Date(d) : new Date();
+  if (isNaN(d)) d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return p(d.getDate()) + "." + p(d.getMonth() + 1) + "." + d.getFullYear();
+}
+
 const SCHEMAS = {
   SLP: { label: "Special Leave Petitions", desc: "Requests for SLPs received from the SLP Cell.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI"] },
   Appeals: { label: "Appeals (Lower Court / CBI Court)", desc: "Requests for appeals against Lower Court / CBI Court judgements.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI"] },
@@ -445,16 +495,20 @@ const SCHEMAS = {
     statusQuickFields: ["Checklist Compliance", "Date of Return of Proposal", "Compliance Received from CBI", "Date of Receiving Compliance", "Stage", "Date of IO Change Request", "Date of PO Change Request", "Status"],
     fields: [
       { key: "Date of Receipt", label: "Date of receipt", type: "date", required: true },
+      { key: "Name & Designation of Delinquent", label: "Name & designation of delinquent officer", type: "text" },
       { key: "Checklist Compliance", label: "Complying with checklist?", type: "select", options: ["Yes", "No"], default: "Yes" },
       { key: "Date of Return of Proposal", label: "Date of return of proposal", type: "date", showIf: { field: "Checklist Compliance", equals: "No" } },
       { key: "Compliance Received from CBI", label: "Has the compliance been done by CBI?", type: "select", options: ["Pending", "Yes"], default: "Pending", showIf: { field: "Checklist Compliance", equals: "No" } },
       { key: "Date of Receiving Compliance", label: "Date of receiving compliance", type: "date", showIf: { field: "Compliance Received from CBI", equals: "Yes" } },
-      { key: "File No", label: "File no.", type: "text", required: true },
+      { key: "File No", label: "File no.", type: "text" },
       { key: "Computer No", label: "Computer no.", type: "text" },
-      { key: "Subject", label: "Subject", type: "textarea", required: true },
+      { key: "Subject", label: "Subject / brief charge", type: "textarea", required: true },
       { key: "Stage", label: "Stage of case", type: "select", options: DISCIPLINARY_STAGES, default: "Case Received from CBI" },
       { key: "Date of IO Change Request", label: "Date of CBI request (change of IO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of IO" } },
       { key: "Date of PO Change Request", label: "Date of CBI request (change of PO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of PO" } },
+      { key: "Present Status", label: "Present status (narrative, used in reports)", type: "textarea" },
+      { key: "Under Stay (CAT/High Court)", label: "Under stay by CAT / High Court?", type: "select", options: ["No", "Yes"], default: "No" },
+      { key: "Charge Memo Date", label: "Date of issue of charge memo", type: "date", showIf: { field: "Under Stay (CAT/High Court)", equals: "Yes" } },
       { key: "Status", label: "Status", type: "select", options: DISCIPLINARY_STATUSES, default: "Received and under process" },
       { key: "Remarks", label: "Remarks", type: "textarea" }
     ]
@@ -1067,23 +1121,61 @@ function inRange(dateStr, from, to) {
   return true;
 }
 
+function buildDisciplinaryBody(rows) {
+  const buckets = {}; BUCKET_ORDER.forEach(b => buckets[b] = []);
+  rows.forEach(r => {
+    const b = disciplinaryBucket(r);
+    if (b && buckets[b]) buckets[b].push(r);
+  });
+  const total = BUCKET_ORDER.reduce((s, b) => s + buckets[b].length, 0);
+
+  let html = `<div class="report-cat-title">Disciplinary Proceedings — Present Status</div>`;
+  html += `<div class="report-summary">`;
+  BUCKET_ORDER.forEach(b => { html += `<div><b>${buckets[b].length}</b>${BUCKET_LABELS[b]}</div>`; });
+  html += `<div><b>${total}</b>Total Disciplinary Cases</div>`;
+  html += `</div>`;
+
+  BUCKET_ORDER.forEach(b => {
+    const list = buckets[b];
+    html += `<div class="report-cat-title" style="font-size:14px;">${BUCKET_LABELS[b]} (${list.length})</div>`;
+    if (!list.length) { html += `<div class="report-empty">NIL</div>`; return; }
+    const showMemoDate = b === "Stayed";
+    html += `<table class="report-table"><thead><tr><th>Sr.</th><th>Name, Designation &amp; Brief Charge</th><th>Present Status</th>${showMemoDate ? "<th>Charge Memo Date</th>" : ""}<th>Remarks</th></tr></thead><tbody>`;
+    list.forEach((r, i) => {
+      const nameDesig = r["Name & Designation of Delinquent"] ? escapeHtml(r["Name & Designation of Delinquent"]) + "<br>" : "";
+      const charge = r.Subject ? `Brief charge: ${escapeHtml(r.Subject)}` : "";
+      const present = escapeHtml(r["Present Status"] || r.Stage || "—");
+      html += `<tr><td>${i+1}</td><td>${nameDesig}${charge}</td><td>${present}</td>${showMemoDate ? `<td>${escapeHtml(r["Charge Memo Date"]||"—")}</td>` : ""}<td>${escapeHtml(r.Remarks||"—")}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  });
+  return html;
+}
+
 function buildReport(type, from, to) {
   const cats = type === "complete" ? CATS : [type];
-  const title = type === "complete" ? "Complete Report — All Categories" : "Report for " + SCHEMAS[type].label;
-  const rangeText = (from || to) ? ` &middot; ${from || "start"} to ${to || "today"}` : " &middot; all dates";
+  const title = type === "complete" ? "Complete Report — All Categories" : (type === "Disciplinary" ? "Present Status of Matters Dealt in AVD-II (B)" : "Report for " + SCHEMAS[type].label);
+  const rangeText = (from || to) ? ` &middot; ${from || "start"} to ${to || "today"}` : ` &middot; as on ${formatDDMMYYYY()}`;
 
-  let summary = `<div class="report-summary">`;
-  cats.forEach(c => {
-    const rows = (DATA[c]||[]).filter(r => inRange(r["Date of Receipt"], from, to));
-    summary += `<div><b>${rows.length}</b>${SCHEMAS[c].label}</div>`;
-  });
-  summary += `</div>`;
+  let summary = "";
+  if (type !== "Disciplinary") {
+    summary = `<div class="report-summary">` + cats.map(c => {
+      const rows = (DATA[c]||[]).filter(r => inRange(r["Date of Receipt"], from, to));
+      return `<div><b>${rows.length}</b>${SCHEMAS[c].label}</div>`;
+    }).join("") + `</div>`;
+  }
 
   let body = "";
   cats.forEach(c => {
     const schema = SCHEMAS[c];
     const rows = (DATA[c]||[]).filter(r => inRange(r["Date of Receipt"], from, to))
       .sort((a,b) => new Date(a["Date of Receipt"]) - new Date(b["Date of Receipt"]));
+
+    if (c === "Disciplinary") {
+      body += buildDisciplinaryBody(rows);
+      return;
+    }
+
     body += `<div class="report-cat-title">${schema.label} (${rows.length})</div>`;
     if (!rows.length) { body += `<div class="report-empty">No entries in this range.</div>`; return; }
     const cols = schema.fields.map(f => f.key);
