@@ -175,6 +175,13 @@ read from Google Sheets happens in the background. The server's read-only
 cache is also retained for 60 seconds and is cleared immediately after each
 dashboard write; no Sheet data is altered by this performance improvement.
 
+**No action since more than 15 days** counts only cases pending with DoPT,
+from the new *Date received for DoPT action / latest representation* field.
+For example, enter `2026-06-23` when a CO's WSD or other representation was
+last received on that date; the case will appear in this attention list only
+after 15 days have passed without action. Blank dates are deliberately not
+counted, so existing official records are not inferred or altered.
+
 Completion is derived from the operative terminal milestone: SLP and Appeal
 matters are no longer pending once their Status is **Communicated to CBI**;
 disciplinary matters are no longer pending once their Stage is **Final Order

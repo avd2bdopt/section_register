@@ -32,13 +32,13 @@
  */
 var SPREADSHEET_ID = "1I5WKmv3-hJNcc8kutou_SEtwpz8jOQMEm3yljrwL9OM";
 
-var LITIGATION_COLS = ['ID', 'Date of Receipt', 'Email Date', 'Email Time', 'File No', 'Computer No', 'RC No./Case No.', 'Subject', 'Status', 'Date Communicated to CBI', 'Remarks'];
+var LITIGATION_COLS = ['ID', 'Date of Receipt', 'Email Date', 'Email Time', 'File No', 'Computer No', 'RC No./Case No.', 'Subject', 'Status', 'Date Communicated to CBI', 'Remarks', 'Date received for DoPT action'];
 
 var SHEETS = {
   SLP: LITIGATION_COLS,
   Appeals: LITIGATION_COLS,
   Withdrawal: LITIGATION_COLS,
-  Disciplinary: ['ID', 'Date of Receipt', 'Checklist Compliance', 'Date of Return of Proposal', 'Compliance Received from CBI', 'Date of Receiving Compliance', 'File No', 'Computer No', 'Subject', 'Stage', 'Date of IO Change Request', 'Date of PO Change Request', 'Status', 'Remarks', 'Name & Designation of Delinquent', 'Present Status', 'Under Stay (CAT/High Court)', 'Charge Memo Date']
+  Disciplinary: ['ID', 'Date of Receipt', 'Checklist Compliance', 'Date of Return of Proposal', 'Compliance Received from CBI', 'Date of Receiving Compliance', 'File No', 'Computer No', 'Subject', 'Stage', 'Date of IO Change Request', 'Date of PO Change Request', 'Status', 'Remarks', 'Name & Designation of Delinquent', 'Present Status', 'Under Stay (CAT/High Court)', 'Charge Memo Date', 'Date received for DoPT action']
 };
 
 function doGet(e) {
@@ -130,13 +130,21 @@ function readSheet_(name) {
     sh.appendRow(headers);
     return [];
   }
-  var matches = headers.every(function (h, i) { return values[0][i] === h; });
+  var currentHeaders = values[0];
+  var matches = headers.every(function (h, i) { return currentHeaders[i] === h; }) && currentHeaders.length === headers.length;
   if (!matches) {
-    sh.insertRowBefore(1);
-    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
-    values.unshift(headers.slice());
+    // Safe schema extension: when new fields are appended to the expected
+    // layout, append only their header cells. Existing columns and every
+    // existing row remain exactly where they are.
+    var isPrefix = currentHeaders.length < headers.length && currentHeaders.every(function (h, i) { return headers[i] === h; });
+    if (isPrefix) {
+      var additions = headers.slice(currentHeaders.length);
+      sh.getRange(1, currentHeaders.length + 1, 1, additions.length).setValues([additions]);
+    } else {
+      throw new Error('Sheet headers for ' + name + ' do not match the expected layout. No data was changed.');
+    }
   } else {
-    headers = values[0];
+    headers = currentHeaders;
   }
 
   if (values.length < 2) return [];

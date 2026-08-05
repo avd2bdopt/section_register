@@ -30,6 +30,7 @@
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--slate);}
+  body{background:radial-gradient(circle at 85% 0%, #E8EEF5 0, transparent 30rem),var(--paper);}
   a{color:inherit;}
 
   /* ---------- Login ---------- */
@@ -61,7 +62,7 @@
   .app{display:none;min-height:100vh;}
   .app.open{display:flex;}
   .sidebar{
-    width:250px;flex-shrink:0;background:var(--ink);color:#EDE9DD;
+    width:250px;flex-shrink:0;background:linear-gradient(180deg,#16233E 0%,var(--ink) 62%,#13213B 100%);color:#EDE9DD;
     padding:28px 20px;position:sticky;top:0;height:100vh;overflow-y:auto;
   }
   .brand{margin-bottom:6px;}
@@ -99,10 +100,14 @@
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
   .card{
     background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;
-    padding:16px 18px;box-shadow:0 1px 2px rgba(28,43,74,.05);
+    padding:16px 18px;box-shadow:0 1px 2px rgba(28,43,74,.05);position:relative;overflow:hidden;
     transition:box-shadow .15s ease, transform .15s ease;
   }
   .card:hover{box-shadow:0 6px 16px rgba(28,43,74,.09);transform:translateY(-1px);}
+  .card::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--blue);opacity:.45;}
+  .card:nth-child(2)::before{background:var(--amber);}
+  .card:nth-child(3)::before{background:var(--sage);}
+  .card:nth-child(4)::before{background:var(--rust);}
   .card.clickable{cursor:pointer;}
   .card.clickable:focus-visible{outline:3px solid var(--blue);outline-offset:2px;}
   .card-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;}
@@ -113,6 +118,7 @@
   /* ---------- Charts ---------- */
   .charts-row{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-bottom:24px;}
   .chart-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:16px 18px;box-shadow:0 1px 2px rgba(28,43,74,.05);}
+  .chart-card{box-shadow:0 8px 24px rgba(28,43,74,.045);}
   .chart-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;margin-bottom:10px;}
   .chart-body{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
   .legend{list-style:none;padding:0;margin:0;font-size:12px;}
@@ -425,6 +431,7 @@ function litigationFields() {
     { key: "Subject", label: "Subject", type: "textarea", required: true },
     { key: "Status", label: "Status", type: "select", options: LITIGATION_STATUSES, default: "Received and under process" },
     { key: "Date Communicated to CBI", label: "Date communicated to CBI", type: "date", showIf: { field: "Status", equals: "Communicated to CBI" } },
+    { key: "Date received for DoPT action", label: "Date received for DoPT action / latest representation", type: "date", hint: "Use the date on which the case, reply or representation came to DoPT and awaits action." },
     { key: "Remarks", label: "Remarks", type: "textarea" }
   ];
 }
@@ -510,6 +517,7 @@ const PENDING_BUCKET_LABELS = {
 };
 const DASHBOARD_PENDING_CATEGORIES = ["SLP", "Appeals", "Disciplinary"];
 const LITIGATION_DASHBOARD_BUCKETS = ["DoPT", "DoLA"];
+const ACTION_DATE_KEY = "Date received for DoPT action";
 
 /* Completion is determined from the operative milestone, not merely from
    the editable Status field. This keeps terminal cases out of all pending
@@ -523,6 +531,15 @@ function pendingBucketFor(cat, r) {
   if (isCompleted(cat, r)) return null;
   if (cat === "Disciplinary") return disciplinaryBucket(r);
   return LITIGATION_PENDING_BUCKETS[r.Status] || "DoPT";
+}
+function noActionSinceCases(category) {
+  const cases = [];
+  const categories = category ? [category] : CATS;
+  categories.forEach(cat => (DATA[cat] || []).forEach(r => {
+    const days = daysSince(r[ACTION_DATE_KEY]);
+    if (pendingBucketFor(cat, r) === "DoPT" && days !== null && days > 15) cases.push({ cat, r, days });
+  }));
+  return cases;
 }
 function allPendingCases(bucket, category) {
   const cases = [];
@@ -541,14 +558,14 @@ function formatDDMMYYYY(d) {
 }
 
 const SCHEMAS = {
-  SLP: { label: "Special Leave Petitions", desc: "Requests for SLPs received from the SLP Cell.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI"] },
-  Appeals: { label: "Appeals (Lower Court / CBI Court)", desc: "Requests for appeals against Lower Court / CBI Court judgements.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI"] },
-  Withdrawal: { label: "Withdrawal from Prosecution", desc: "Requests for withdrawal from prosecution cases.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI"] },
+  SLP: { label: "Special Leave Petitions", desc: "Requests for SLPs received from the SLP Cell.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI", "Date received for DoPT action"] },
+  Appeals: { label: "Appeals (Lower Court / CBI Court)", desc: "Requests for appeals against Lower Court / CBI Court judgements.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI", "Date received for DoPT action"] },
+  Withdrawal: { label: "Withdrawal from Prosecution", desc: "Requests for withdrawal from prosecution cases.", fields: litigationFields(), statusOptions: LITIGATION_STATUSES, statusQuickFields: ["Status", "Date Communicated to CBI", "Date received for DoPT action"] },
   Disciplinary: {
     label: "Disciplinary Proceedings",
     desc: "Disciplinary proceeding cases and their current stage.",
     statusOptions: DISCIPLINARY_STATUSES,
-    statusQuickFields: ["Checklist Compliance", "Date of Return of Proposal", "Compliance Received from CBI", "Date of Receiving Compliance", "Stage", "Date of IO Change Request", "Date of PO Change Request", "Status"],
+    statusQuickFields: ["Checklist Compliance", "Date of Return of Proposal", "Compliance Received from CBI", "Date of Receiving Compliance", "Stage", "Date of IO Change Request", "Date of PO Change Request", "Date received for DoPT action", "Status"],
     fields: [
       { key: "Date of Receipt", label: "Date of receipt", type: "date", required: true },
       { key: "Name & Designation of Delinquent", label: "Name & designation of delinquent officer", type: "text" },
@@ -562,6 +579,7 @@ const SCHEMAS = {
       { key: "Stage", label: "Stage of case", type: "select", options: DISCIPLINARY_STAGES, default: "Case Received from CBI" },
       { key: "Date of IO Change Request", label: "Date of CBI request (change of IO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of IO" } },
       { key: "Date of PO Change Request", label: "Date of CBI request (change of PO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of PO" } },
+      { key: "Date received for DoPT action", label: "Date received for DoPT action / latest representation", type: "date", hint: "Use the latest date on which a reply, WSD or representation was received by DoPT for action." },
       { key: "Present Status", label: "Present status (narrative, used in reports)", type: "textarea" },
       { key: "Under Stay (CAT/High Court)", label: "Under stay by CAT / High Court?", type: "select", options: ["No", "Yes"], default: "No" },
       { key: "Charge Memo Date", label: "Date of issue of charge memo", type: "date", showIf: { field: "Under Stay (CAT/High Court)", equals: "Yes" } },
@@ -861,21 +879,20 @@ function renderPage() {
 
 function renderOverviewCards() {
   const cards = document.getElementById("cards");
-  let total = 0, pending = 0, overdue = 0;
+  let total = 0, pending = 0;
   CATS.forEach(c => {
     (DATA[c] || []).forEach(r => {
       total++;
       if (DASHBOARD_PENDING_CATEGORIES.includes(c) && !isCompleted(c, r)) pending++;
-      const d = daysSince(r["Date of Receipt"]);
-      if (d !== null && d > 15 && !isCompleted(c, r)) overdue++;
     });
   });
   const pendingWithDoPT = allPendingCases("DoPT").length;
+  const noAction = noActionSinceCases().length;
   cards.innerHTML = `
     <button class="card clickable" type="button" data-overview-drill="total"><div class="card-label">Total cases</div><div class="card-value">${total}</div><div class="card-hint">Click to view all cases</div></button>
     <button class="card clickable" type="button" data-pending-drill="all"><div class="card-label">Total pending</div><div class="card-value">${pending}</div><div class="card-hint">Click for pending-with breakup</div></button>
     <button class="card clickable" type="button" data-pending-drill="DoPT"><div class="card-label">Pending with DoPT</div><div class="card-value">${pendingWithDoPT}</div><div class="card-hint">Click to see cases</div></button>
-    <div class="card"><div class="card-label">Overdue &gt;15 days</div><div class="card-value ${overdue?'alert':''}">${overdue}</div><div class="card-hint">Needs attention</div></div>
+    <button class="card clickable" type="button" data-no-action-cases><div class="card-label">No action since &gt;15 days</div><div class="card-value ${noAction?'alert':''}">${noAction}</div><div class="card-hint">With DoPT, from last receipt / representation</div></button>
   `;
   cards.querySelectorAll("[data-pending-drill]").forEach(card => card.onclick = () => {
     overviewDrilldown = card.dataset.pendingDrill === "all"
@@ -887,6 +904,12 @@ function renderOverviewCards() {
   const totalCard = cards.querySelector("[data-overview-drill='total']");
   totalCard.onclick = () => {
     overviewDrilldown = { mode: "total-cases", category: "", bucket: "" };
+    document.getElementById("content").innerHTML = renderOverviewLists();
+    attachRowHandlers();
+  };
+  const noActionCard = cards.querySelector("[data-no-action-cases]");
+  noActionCard.onclick = () => {
+    overviewDrilldown = { mode: "no-action-cases", category: "", bucket: "" };
     document.getElementById("content").innerHTML = renderOverviewLists();
     attachRowHandlers();
   };
@@ -914,12 +937,12 @@ function renderCategoryCards(cat) {
   const cards = document.getElementById("cards");
   const rows = DATA[cat] || [];
   const pending = rows.filter(r => !isCompleted(cat, r)).length;
-  const overdue = rows.filter(r => { const d = daysSince(r["Date of Receipt"]); return d!==null && d>15 && !isCompleted(cat, r); }).length;
+  const noAction = noActionSinceCases(cat).length;
   const completed = rows.filter(r => isCompleted(cat, r)).length;
   cards.innerHTML = `
     <div class="card"><div class="card-label">Total</div><div class="card-value">${rows.length}</div></div>
     <div class="card"><div class="card-label">Pending</div><div class="card-value">${pending}</div></div>
-    <div class="card"><div class="card-label">Overdue &gt;15 days</div><div class="card-value ${overdue?'alert':''}">${overdue}</div></div>
+    <div class="card"><div class="card-label">No action since &gt;15 days</div><div class="card-value ${noAction?'alert':''}">${noAction}</div><div class="card-hint">With DoPT only</div></div>
     <div class="card"><div class="card-label">Completed</div><div class="card-value">${completed}</div></div>
   `;
 }
@@ -941,6 +964,7 @@ function renderOverviewLists() {
   if (overviewDrilldown.mode === "pending-categories") return renderPendingCategories();
   if (overviewDrilldown.mode === "pending-buckets") return renderPendingBuckets(overviewDrilldown.category);
   if (overviewDrilldown.mode === "pending-cases") return renderPendingCasesOnly(overviewDrilldown.category, overviewDrilldown.bucket);
+  if (overviewDrilldown.mode === "no-action-cases") return renderNoActionCases();
   const drilldown = "";
   return drilldown + CATS.map(c => {
     const rows = (DATA[c] || []).filter(r => !isCompleted(c, r))
@@ -966,6 +990,10 @@ function renderAllCases() {
     .sort((a, b) => new Date(b.r["Date of Receipt"]) - new Date(a.r["Date of Receipt"]));
   return renderDrilldownCaseTable("All cases", cases, "Back to overview");
 }
+function renderNoActionCases() {
+  const cases = noActionSinceCases();
+  return renderDrilldownCaseTable("No action since more than 15 days", cases, "Back to overview", "no-action");
+}
 function renderPendingCategories() {
   const rows = DASHBOARD_PENDING_CATEGORIES.map(category => {
     const count = allPendingCases("", category).length;
@@ -983,21 +1011,24 @@ function renderPendingCasesOnly(category, bucket) {
   const cases = allPendingCases(bucket, category);
   return renderDrilldownCaseTable(title, cases, "Back");
 }
-function renderDrilldownCaseTable(title, cases, backLabel) {
-  const sorted = [...cases].sort((a, b) => new Date(a.r["Date of Receipt"]) - new Date(b.r["Date of Receipt"]));
-  return `<section class="pending-drilldown"><div class="pending-drill-head"><h2 class="pending-drill-title">${title} (${sorted.length})</h2><button class="btn ghost small" data-back-from-cases>${backLabel}</button></div><div class="register">${sorted.length ? sorted.map((item, i) => registerRow(item.cat, item.r, i)).join("") : `<div class="empty">No matching cases.</div>`}</div></section>`;
+function renderDrilldownCaseTable(title, cases, backLabel, sortMode) {
+  const sorted = [...cases].sort((a, b) => sortMode === "no-action"
+    ? b.days - a.days
+    : new Date(a.r["Date of Receipt"]) - new Date(b.r["Date of Receipt"]));
+  return `<section class="pending-drilldown"><div class="pending-drill-head"><h2 class="pending-drill-title">${title} (${sorted.length})</h2><button class="btn ghost small" data-back-from-cases>${backLabel}</button></div><div class="register">${sorted.length ? sorted.map((item, i) => registerRow(item.cat, item.r, i, sortMode === "no-action" ? item.r[ACTION_DATE_KEY] : "")).join("") : `<div class="empty">No matching cases.</div>`}</div></section>`;
 }
 
-function registerRow(cat, r, idx) {
-  const d = daysSince(r["Date of Receipt"]);
+function registerRow(cat, r, idx, agingDate) {
+  const d = daysSince(agingDate || r["Date of Receipt"]);
   const statusLabel = isCompleted(cat, r) ? "Completed" : (r.Status || SCHEMAS[cat].statusOptions[0]);
+  const actionMeta = agingDate ? " · Awaiting DoPT action since " + escapeHtml(agingDate) : "";
   return `
     <div class="reg-row" data-cat="${cat}" data-id="${r.ID}">
       <div class="reg-num">${idx+1}.</div>
       <div>${agingStamp(d)}</div>
       <div>
         <div class="reg-subject">${escapeHtml(r.Subject || "(no subject)")}</div>
-        <div class="reg-meta">Received ${r["Date of Receipt"] || "—"}${cat==="Disciplinary" && r.Stage ? " · " + escapeHtml(r.Stage) : ""}${cat!=="Disciplinary" && r["RC No./Case No."] ? " · RC/Case No. " + escapeHtml(r["RC No./Case No."]) : ""}</div>
+        <div class="reg-meta">Received ${r["Date of Receipt"] || "—"}${cat==="Disciplinary" && r.Stage ? " · " + escapeHtml(r.Stage) : ""}${cat!=="Disciplinary" && r["RC No./Case No."] ? " · RC/Case No. " + escapeHtml(r["RC No./Case No."]) : ""}${actionMeta}</div>
       </div>
       <div class="reg-file">${escapeHtml(r["File No"] || "—")}</div>
       <div class="reg-file">${escapeHtml(r["Computer No"] || "—")}</div>
@@ -1131,7 +1162,7 @@ function openDrawer(cat, record, mode) {
     } else {
       inputHtml = `<input type="${f.type}" name="${f.key}" value="${escapeHtml(val)}" ${f.required?'required':''}>`;
     }
-    return `<div class="field" data-fieldkey="${f.key}"><label>${f.label}</label>${inputHtml}</div>`;
+    return `<div class="field" data-fieldkey="${f.key}"><label>${f.label}</label>${inputHtml}${f.hint ? `<div class="hint">${f.hint}</div>` : ""}</div>`;
   }).join("") + `
     <div class="drawer-actions">
       <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
