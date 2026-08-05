@@ -103,6 +103,8 @@
     transition:box-shadow .15s ease, transform .15s ease;
   }
   .card:hover{box-shadow:0 6px 16px rgba(28,43,74,.09);transform:translateY(-1px);}
+  .card.clickable{cursor:pointer;}
+  .card.clickable:focus-visible{outline:3px solid var(--blue);outline-offset:2px;}
   .card-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;}
   .card-value{font-family:var(--serif);font-size:30px;color:var(--ink);margin-top:6px;}
   .card-value.alert{color:var(--rust);}
@@ -188,6 +190,21 @@
 
   .empty{padding:48px 20px;text-align:center;color:var(--slate-light);font-size:13px;}
   .empty strong{display:block;color:var(--ink);font-family:var(--serif);font-size:16px;margin-bottom:6px;}
+
+  /* ---------- Overview pending drill-down ---------- */
+  .pending-drilldown{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:24px;box-shadow:0 1px 2px rgba(28,43,74,.05);}
+  .pending-drill-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:12px;}
+  .pending-drill-title{font-family:var(--serif);font-size:19px;color:var(--ink);margin:0;}
+  .pending-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .pending-table th,.pending-table td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;}
+  .pending-table th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-light);}
+  .pending-table tr:last-child td{border-bottom:0;}
+  .pending-link{border:0;background:none;color:var(--blue);font:inherit;font-weight:600;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+  .pending-link:hover{color:var(--ink);}
+  .case-detail-grid{display:grid;grid-template-columns:150px 1fr;gap:0;border-top:1px solid var(--border);margin-top:16px;}
+  .case-detail-grid dt,.case-detail-grid dd{margin:0;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .case-detail-grid dt{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--slate-light);}
+  .case-detail-grid dd{color:var(--slate);word-break:break-word;}
 
   /* ---------- Drawer / form ---------- */
   .overlay{
@@ -477,6 +494,42 @@ function disciplinaryBucket(r) {
   if (mapped === undefined) return "DoPT";
   return mapped;
 }
+const COMPLETED_LITIGATION_CATEGORIES = ["SLP", "Appeals"];
+const LITIGATION_PENDING_BUCKETS = {
+  "Forwarded to DoLA": "DoLA"
+};
+const PENDING_BUCKET_ORDER = ["DoPT", "DoLA", "CBI", "IA", "UPSC", "CO", "Stayed"];
+const PENDING_BUCKET_LABELS = {
+  DoPT: "Pending with DoPT",
+  DoLA: "Pending with DoLA",
+  CBI: "Pending with CBI",
+  IA: "Pending with Inquiry Authority (IA)",
+  UPSC: "Pending with UPSC",
+  CO: "Pending with Charged Officer (CO)",
+  Stayed: "Cases stayed by CAT / High Court"
+};
+
+/* Completion is determined from the operative milestone, not merely from
+   the editable Status field. This keeps terminal cases out of all pending
+   views even where older Sheet records still carry an in-process status. */
+function isCompleted(cat, r) {
+  if (COMPLETED_LITIGATION_CATEGORIES.includes(cat)) return r.Status === "Communicated to CBI";
+  if (cat === "Disciplinary") return r.Stage === "Final Order issued with the approval of DA";
+  return r.Status === "Completed";
+}
+function pendingBucketFor(cat, r) {
+  if (isCompleted(cat, r)) return null;
+  if (cat === "Disciplinary") return disciplinaryBucket(r);
+  return LITIGATION_PENDING_BUCKETS[r.Status] || "DoPT";
+}
+function allPendingCases(bucket) {
+  const cases = [];
+  CATS.forEach(cat => (DATA[cat] || []).forEach(r => {
+    const pendingBucket = pendingBucketFor(cat, r);
+    if (pendingBucket && (!bucket || pendingBucket === bucket)) cases.push({ cat, r, bucket: pendingBucket });
+  }));
+  return cases;
+}
 function formatDDMMYYYY(d) {
   d = d ? new Date(d) : new Date();
   if (isNaN(d)) d = new Date();
@@ -596,6 +649,7 @@ let currentTab = "overview";
 let editingId = null;
 let searchTerm = "";
 let statusFilterVal = "";
+let overviewDrilldown = { show: false, bucket: "" };
 
 async function boot() {
   const dot = document.getElementById("apiDot");
@@ -785,31 +839,35 @@ function renderPage() {
 
 function renderOverviewCards() {
   const cards = document.getElementById("cards");
-  let total = 0, pending = 0, overdue = 0, thisWeek = 0;
-  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+  let total = 0, pending = 0, overdue = 0;
   CATS.forEach(c => {
     (DATA[c] || []).forEach(r => {
       total++;
-      if ((r.Status || "") !== "Completed") pending++;
+      if (!isCompleted(c, r)) pending++;
       const d = daysSince(r["Date of Receipt"]);
-      if (d !== null && d > 15 && (r.Status || "") !== "Completed") overdue++;
-      if (r["Date of Receipt"] && new Date(r["Date of Receipt"]) >= weekAgo) thisWeek++;
+      if (d !== null && d > 15 && !isCompleted(c, r)) overdue++;
     });
   });
+  const pendingWithDoPT = allPendingCases("DoPT").length;
   cards.innerHTML = `
     <div class="card"><div class="card-label">Total cases</div><div class="card-value">${total}</div><div class="card-hint">Across all 4 categories</div></div>
-    <div class="card"><div class="card-label">Pending</div><div class="card-value">${pending}</div><div class="card-hint">Not yet completed</div></div>
+    <button class="card clickable" type="button" data-pending-drill="all"><div class="card-label">Total pending</div><div class="card-value">${pending}</div><div class="card-hint">Click for pending-with breakup</div></button>
+    <button class="card clickable" type="button" data-pending-drill="DoPT"><div class="card-label">Pending with DoPT</div><div class="card-value">${pendingWithDoPT}</div><div class="card-hint">Click to see cases</div></button>
     <div class="card"><div class="card-label">Overdue &gt;15 days</div><div class="card-value ${overdue?'alert':''}">${overdue}</div><div class="card-hint">Needs attention</div></div>
-    <div class="card"><div class="card-label">Received this week</div><div class="card-value">${thisWeek}</div><div class="card-hint">Last 7 days</div></div>
   `;
+  cards.querySelectorAll("[data-pending-drill]").forEach(card => card.onclick = () => {
+    overviewDrilldown = { show: true, bucket: card.dataset.pendingDrill === "all" ? "" : card.dataset.pendingDrill };
+    document.getElementById("content").innerHTML = renderOverviewLists();
+    attachRowHandlers();
+  });
 }
 
 function renderOverviewCharts() {
   const chartsRow = document.getElementById("chartsRow");
-  const barData = CATS.map(c => ({ label: SCHEMAS[c].label.split(" ")[0], value: (DATA[c]||[]).filter(r => (r.Status||"") !== "Completed").length, color: CAT_COLORS[c] }));
+  const barData = CATS.map(c => ({ label: SCHEMAS[c].label.split(" ")[0], value: (DATA[c]||[]).filter(r => !isCompleted(c, r)).length, color: CAT_COLORS[c] }));
   let completed=0, returned=0, inprocess=0;
   CATS.forEach(c => (DATA[c]||[]).forEach(r => {
-    const b = statusBucket(r.Status);
+    const b = isCompleted(c, r) ? "Completed" : statusBucket(r.Status);
     if (b === "Completed") completed++; else if (b === "Returned") returned++; else inprocess++;
   }));
   const donutData = [
@@ -825,9 +883,9 @@ function renderOverviewCharts() {
 function renderCategoryCards(cat) {
   const cards = document.getElementById("cards");
   const rows = DATA[cat] || [];
-  const pending = rows.filter(r => (r.Status||"") !== "Completed").length;
-  const overdue = rows.filter(r => { const d = daysSince(r["Date of Receipt"]); return d!==null && d>15 && (r.Status||"")!=="Completed"; }).length;
-  const completed = rows.filter(r => r.Status === "Completed").length;
+  const pending = rows.filter(r => !isCompleted(cat, r)).length;
+  const overdue = rows.filter(r => { const d = daysSince(r["Date of Receipt"]); return d!==null && d>15 && !isCompleted(cat, r); }).length;
+  const completed = rows.filter(r => isCompleted(cat, r)).length;
   cards.innerHTML = `
     <div class="card"><div class="card-label">Total</div><div class="card-value">${rows.length}</div></div>
     <div class="card"><div class="card-label">Pending</div><div class="card-value">${pending}</div></div>
@@ -849,8 +907,9 @@ function renderCategoryCharts(cat) {
 }
 
 function renderOverviewLists() {
-  return CATS.map(c => {
-    const rows = (DATA[c] || []).filter(r => (r.Status || "") !== "Completed")
+  const drilldown = overviewDrilldown.show ? renderPendingDrilldown() : "";
+  return drilldown + CATS.map(c => {
+    const rows = (DATA[c] || []).filter(r => !isCompleted(c, r))
       .sort((a,b) => new Date(a["Date of Receipt"]) - new Date(b["Date of Receipt"])).slice(0, 5);
     return `
       <div style="margin-bottom:26px;">
@@ -865,9 +924,35 @@ function renderOverviewLists() {
   }).join("");
 }
 
+function renderPendingDrilldown() {
+  const all = allPendingCases();
+  const byBucket = {};
+  PENDING_BUCKET_ORDER.forEach(b => byBucket[b] = all.filter(item => item.bucket === b));
+  const rows = PENDING_BUCKET_ORDER.map(b => {
+    const categorySummary = CATS.map(c => {
+      const n = byBucket[b].filter(item => item.cat === c).length;
+      return n ? `${SCHEMAS[c].label}: ${n}` : "";
+    }).filter(Boolean).join(" · ");
+    return `<tr><td><button class="pending-link" data-pending-bucket="${b}">${PENDING_BUCKET_LABELS[b]}</button></td><td>${byBucket[b].length}</td><td>${categorySummary}</td></tr>`;
+  }).join("");
+  const selected = overviewDrilldown.bucket;
+  const cases = selected ? allPendingCases(selected) : [];
+  return `
+    <section class="pending-drilldown">
+      <div class="pending-drill-head"><h2 class="pending-drill-title">Total pending — where cases are pending</h2><button class="btn ghost small" data-close-pending-drill>Close</button></div>
+      <table class="pending-table"><thead><tr><th>Pending with</th><th>Cases</th><th>Category breakup</th></tr></thead><tbody>${rows}</tbody></table>
+      ${selected ? renderPendingCaseList(selected, cases) : ""}
+    </section>`;
+}
+
+function renderPendingCaseList(bucket, cases) {
+  const sorted = [...cases].sort((a,b) => new Date(a.r["Date of Receipt"]) - new Date(b.r["Date of Receipt"]));
+  return `<div style="margin-top:20px;"><div class="pending-drill-head"><h3 class="pending-drill-title" style="font-size:16px;">${PENDING_BUCKET_LABELS[bucket]} (${sorted.length})</h3><button class="btn ghost small" data-clear-pending-bucket>Show all groups</button></div><div class="register">${sorted.length ? sorted.map((item, i) => registerRow(item.cat, item.r, i)).join("") : `<div class="empty">No matching cases.</div>`}</div></div>`;
+}
+
 function registerRow(cat, r, idx) {
   const d = daysSince(r["Date of Receipt"]);
-  const statusLabel = r.Status || SCHEMAS[cat].statusOptions[0];
+  const statusLabel = isCompleted(cat, r) ? "Completed" : (r.Status || SCHEMAS[cat].statusOptions[0]);
   return `
     <div class="reg-row" data-cat="${cat}" data-id="${r.ID}">
       <div class="reg-num">${idx+1}.</div>
@@ -911,11 +996,27 @@ function attachRowHandlers() {
     const editBtn = row.querySelector(".edit");
     const delBtn = row.querySelector(".del");
     const statusBtn = row.querySelector(".status-btn");
-    if (editBtn) editBtn.onclick = () => openDrawer(cat, rec, "full");
-    if (delBtn) delBtn.onclick = () => confirmDelete(cat, id);
-    if (statusBtn) statusBtn.onclick = () => openDrawer(cat, rec, "status");
+    row.onclick = () => openCaseDetail(cat, rec);
+    if (editBtn) editBtn.onclick = (e) => { e.stopPropagation(); openDrawer(cat, rec, "full"); };
+    if (delBtn) delBtn.onclick = (e) => { e.stopPropagation(); confirmDelete(cat, id); };
+    if (statusBtn) statusBtn.onclick = (e) => { e.stopPropagation(); openDrawer(cat, rec, "status"); };
   });
   document.querySelectorAll("[data-goto]").forEach(b => b.onclick = () => { currentTab = b.dataset.goto; renderNav(); renderPage(); });
+  document.querySelectorAll("[data-pending-bucket]").forEach(b => b.onclick = () => {
+    overviewDrilldown.bucket = b.dataset.pendingBucket;
+    document.getElementById("content").innerHTML = renderOverviewLists();
+    attachRowHandlers();
+  });
+  document.querySelectorAll("[data-close-pending-drill]").forEach(b => b.onclick = () => {
+    overviewDrilldown = { show: false, bucket: "" };
+    document.getElementById("content").innerHTML = renderOverviewLists();
+    attachRowHandlers();
+  });
+  document.querySelectorAll("[data-clear-pending-bucket]").forEach(b => b.onclick = () => {
+    overviewDrilldown.bucket = "";
+    document.getElementById("content").innerHTML = renderOverviewLists();
+    attachRowHandlers();
+  });
   const s = document.getElementById("searchInput");
   const f = document.getElementById("statusFilter");
   if (currentTab !== "overview" && currentTab !== "reports") {
@@ -927,6 +1028,20 @@ function attachRowHandlers() {
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+function openCaseDetail(cat, record) {
+  if (!record) return;
+  const schema = SCHEMAS[cat];
+  const fields = schema.fields.filter(f => f.key !== "ID");
+  document.getElementById("drawerTitle").textContent = "Case details";
+  document.getElementById("drawerSub").textContent = schema.label;
+  document.getElementById("entryForm").innerHTML = `
+    <dl class="case-detail-grid">${fields.map(f => `<dt>${escapeHtml(f.label)}</dt><dd>${escapeHtml(record[f.key] || "—")}</dd>`).join("")}</dl>
+    <div class="drawer-actions"><button type="button" class="btn ghost" id="detailCloseBtn">Close</button><button type="button" class="btn" id="detailEditBtn">Edit case</button></div>`;
+  document.getElementById("detailCloseBtn").onclick = closeDrawer;
+  document.getElementById("detailEditBtn").onclick = () => openDrawer(cat, record, "full");
+  document.getElementById("overlay").classList.add("open");
 }
 
 /* ---------------------------------------------------------------------
@@ -1027,6 +1142,7 @@ function applyDisciplinaryLogic(form) {
   const statusField = form.elements["Status"];
   const stageWrapper = form.querySelector('[data-fieldkey="Stage"]');
   const statusWrapper = form.querySelector('[data-fieldkey="Status"]');
+  const finalOrder = stageField.value === "Final Order issued with the approval of DA";
 
   const locked = checklist === "No" && complianceVal !== "Yes";
   let stageHint = stageWrapper.querySelector(".hint");
@@ -1041,6 +1157,12 @@ function applyDisciplinaryLogic(form) {
     stageHint.textContent = "Locked — set automatically until CBI's compliance is received.";
     if (!statusHint) { statusHint = document.createElement("div"); statusHint.className = "hint"; statusWrapper.appendChild(statusHint); }
     statusHint.textContent = "Locked — set automatically until CBI's compliance is received.";
+  } else if (finalOrder) {
+    statusField.value = "Completed";
+    statusField.disabled = true;
+    if (stageHint) stageHint.remove();
+    if (!statusHint) { statusHint = document.createElement("div"); statusHint.className = "hint"; statusWrapper.appendChild(statusHint); }
+    statusHint.textContent = "Set automatically — final order has been issued.";
   } else {
     if (stageField.disabled) {
       stageField.disabled = false;
@@ -1048,7 +1170,7 @@ function applyDisciplinaryLogic(form) {
     }
     if (statusField.disabled) {
       statusField.disabled = false;
-      if (statusField.value === "Returned") statusField.value = "Received and under process";
+      if (statusField.value === "Returned" || statusField.value === "Completed") statusField.value = "Received and under process";
     }
     if (stageHint) stageHint.remove();
     if (statusHint) statusHint.remove();

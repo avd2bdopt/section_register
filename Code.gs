@@ -20,8 +20,17 @@
  *   ID | Date of Receipt | Checklist Compliance | Date of Return of Proposal |
  *   Compliance Received from CBI | Date of Receiving Compliance | File No |
  *   Computer No | Subject | Stage | Date of IO Change Request |
- *   Date of PO Change Request | Status | Remarks
+ *   Date of PO Change Request | Status | Remarks | Name & Designation of
+ *   Delinquent | Present Status | Under Stay (CAT/High Court) | Charge Memo Date
  */
+
+/**
+ * IMPORTANT: this script must point at your actual case register Sheet.
+ * Paste the Sheet's ID here (the long string in its URL, between
+ * /d/ and /edit) — this removes any ambiguity about which spreadsheet
+ * the script is bound to.
+ */
+var SPREADSHEET_ID = "1I5WKmv3-hJNcc8kutou_SEtwpz8jOQMEm3yljrwL9OM";
 
 var LITIGATION_COLS = ['ID', 'Date of Receipt', 'Email Date', 'Email Time', 'File No', 'Computer No', 'RC No./Case No.', 'Subject', 'Status', 'Date Communicated to CBI', 'Remarks'];
 
@@ -29,18 +38,25 @@ var SHEETS = {
   SLP: LITIGATION_COLS,
   Appeals: LITIGATION_COLS,
   Withdrawal: LITIGATION_COLS,
-  Disciplinary: ['ID', 'Date of Receipt', 'Checklist Compliance', 'Date of Return of Proposal', 'Compliance Received from CBI', 'Date of Receiving Compliance', 'File No', 'Computer No', 'Subject', 'Stage', 'Date of IO Change Request', 'Date of PO Change Request', 'Status', 'Remarks']
+  Disciplinary: ['ID', 'Date of Receipt', 'Checklist Compliance', 'Date of Return of Proposal', 'Compliance Received from CBI', 'Date of Receiving Compliance', 'File No', 'Computer No', 'Subject', 'Stage', 'Date of IO Change Request', 'Date of PO Change Request', 'Status', 'Remarks', 'Name & Designation of Delinquent', 'Present Status', 'Under Stay (CAT/High Court)', 'Charge Memo Date']
 };
 
 function doGet(e) {
   try {
     var action = e.parameter.action || 'list';
     if (action === 'list') {
+      var cache = CacheService.getScriptCache();
+      var cached = cache.get('list_response');
+      if (cached) {
+        return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
+      }
       var all = {};
       Object.keys(SHEETS).forEach(function (name) {
         all[name] = readSheet_(name);
       });
-      return jsonOut_({ ok: true, data: all });
+      var payload = JSON.stringify({ ok: true, data: all });
+      cache.put('list_response', payload, 15); // seconds
+      return ContentService.createTextOutput(payload).setMimeType(ContentService.MimeType.JSON);
     }
     return jsonOut_({ ok: false, error: 'Unknown action' });
   } catch (err) {
@@ -58,26 +74,36 @@ function doPost(e) {
       return jsonOut_({ ok: false, error: 'Unknown sheet: ' + sheetName });
     }
 
+    var result;
     if (action === 'add') {
       var row = addRow_(sheetName, body.data);
-      return jsonOut_({ ok: true, data: row });
-    }
-    if (action === 'update') {
+      result = jsonOut_({ ok: true, data: row });
+    } else if (action === 'update') {
       var updated = updateRow_(sheetName, body.id, body.data);
-      return jsonOut_({ ok: updated, data: body.data });
-    }
-    if (action === 'delete') {
+      result = jsonOut_({ ok: updated, data: body.data });
+    } else if (action === 'delete') {
       var deleted = deleteRow_(sheetName, body.id);
-      return jsonOut_({ ok: deleted });
+      result = jsonOut_({ ok: deleted });
+    } else {
+      return jsonOut_({ ok: false, error: 'Unknown action: ' + action });
     }
-    return jsonOut_({ ok: false, error: 'Unknown action: ' + action });
+    // Any successful write invalidates the cached list so the next
+    // load reflects the change immediately instead of stale data.
+    CacheService.getScriptCache().remove('list_response');
+    return result;
   } catch (err) {
     return jsonOut_({ ok: false, error: String(err) });
   }
 }
 
+var _ssCache_ = null;
+function getSpreadsheet_() {
+  if (!_ssCache_) _ssCache_ = SpreadsheetApp.openById(SPREADSHEET_ID);
+  return _ssCache_;
+}
+
 function getSheet_(name) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = getSpreadsheet_();
   var sh = ss.getSheetByName(name);
   if (!sh) {
     sh = ss.insertSheet(name);
@@ -86,11 +112,32 @@ function getSheet_(name) {
   return sh;
 }
 
+/**
+ * Reads a tab's data. Also verifies the header row matches SHEETS[name]
+ * and repairs it in place if not (e.g. data was entered before headers
+ * existed, or new columns were added to SHEETS) — using the data already
+ * fetched by this same call, so the common case (headers already
+ * correct) costs exactly one read, no separate round-trip.
+ */
 function readSheet_(name) {
   var sh = getSheet_(name);
   var values = sh.getDataRange().getValues();
+  var headers = SHEETS[name];
+
+  if (values.length === 0) {
+    sh.appendRow(headers);
+    return [];
+  }
+  var matches = headers.every(function (h, i) { return values[0][i] === h; });
+  if (!matches) {
+    sh.insertRowBefore(1);
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    values.unshift(headers.slice());
+  } else {
+    headers = values[0];
+  }
+
   if (values.length < 2) return [];
-  var headers = values[0];
   var out = [];
   for (var i = 1; i < values.length; i++) {
     var row = values[i];

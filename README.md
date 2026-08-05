@@ -161,12 +161,20 @@ table per category.
 
 ## Charts
 
-Overview page: pending-case count by category, and a status-bucket donut
-(In process / Completed / Returned) across the whole section. Each
-category page: a status-breakdown donut for that category's own status
-options, and a bar chart of receipts over the last 6 months. These are
-hand-drawn SVG (no external chart library), so they work even if your
-office network blocks CDN domains.
+Overview page: a clickable **Total Pending** card and **Pending with DoPT**
+card. Selecting Total Pending opens a same-page breakup showing where every
+pending matter sits — DoPT, DoLA, CBI, Inquiry Authority, UPSC, Charged
+Officer, and stayed matters — including the category-wise count. Clicking a
+breakup opens the matching case list; clicking a case opens its details in a
+popup, from where it can be edited.
+
+Completion is derived from the operative terminal milestone: SLP and Appeal
+matters are no longer pending once their Status is **Communicated to CBI**;
+disciplinary matters are no longer pending once their Stage is **Final Order
+issued with the approval of DA**. Each category page still provides a
+status-breakdown donut and a bar chart of receipts over the last 6 months.
+These are hand-drawn SVG (no external chart library), so they work even if
+your office network blocks CDN domains.
 
 ## Notes on the two files
 
