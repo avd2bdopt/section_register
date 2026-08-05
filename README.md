@@ -161,12 +161,19 @@ table per category.
 
 ## Charts
 
-Overview page: a clickable **Total Pending** card and **Pending with DoPT**
-card. Selecting Total Pending opens a same-page breakup showing where every
-pending matter sits — DoPT, DoLA, CBI, Inquiry Authority, UPSC, Charged
-Officer, and stayed matters — including the category-wise count. Clicking a
-breakup opens the matching case list; clicking a case opens its details in a
-popup, from where it can be edited.
+Overview page: clicking **Total cases** displays one table containing every
+case. Clicking **Total Pending** first displays exactly three categories:
+SLPs, Appeals and DP Cases. SLPs and Appeals then show only *Pending with
+DoPT* and *Pending with DoLA*; DP Cases show DoPT, DoLA, CBI, Inquiry
+Authority, UPSC, Charged Officer and stayed options. Selecting any pending
+option displays only its matching cases. Clicking a case opens its details in
+a popup, from where it can be edited.
+
+The dashboard keeps a copy of the most recently loaded data only for the
+current browser session, so repeat opens show immediately while a fresh
+read from Google Sheets happens in the background. The server's read-only
+cache is also retained for 60 seconds and is cleared immediately after each
+dashboard write; no Sheet data is altered by this performance improvement.
 
 Completion is derived from the operative terminal milestone: SLP and Appeal
 matters are no longer pending once their Status is **Communicated to CBI**;

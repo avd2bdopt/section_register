@@ -55,7 +55,9 @@ function doGet(e) {
         all[name] = readSheet_(name);
       });
       var payload = JSON.stringify({ ok: true, data: all });
-      cache.put('list_response', payload, 15); // seconds
+      // Read-only response cache: makes repeat dashboard loads much faster.
+      // It is cleared immediately after every dashboard add/update/delete.
+      cache.put('list_response', payload, 60); // seconds
       return ContentService.createTextOutput(payload).setMimeType(ContentService.MimeType.JSON);
     }
     return jsonOut_({ ok: false, error: 'Unknown action' });

@@ -508,6 +508,8 @@ const PENDING_BUCKET_LABELS = {
   CO: "Pending with Charged Officer (CO)",
   Stayed: "Cases stayed by CAT / High Court"
 };
+const DASHBOARD_PENDING_CATEGORIES = ["SLP", "Appeals", "Disciplinary"];
+const LITIGATION_DASHBOARD_BUCKETS = ["DoPT", "DoLA"];
 
 /* Completion is determined from the operative milestone, not merely from
    the editable Status field. This keeps terminal cases out of all pending
@@ -522,9 +524,10 @@ function pendingBucketFor(cat, r) {
   if (cat === "Disciplinary") return disciplinaryBucket(r);
   return LITIGATION_PENDING_BUCKETS[r.Status] || "DoPT";
 }
-function allPendingCases(bucket) {
+function allPendingCases(bucket, category) {
   const cases = [];
-  CATS.forEach(cat => (DATA[cat] || []).forEach(r => {
+  const categories = category ? [category] : DASHBOARD_PENDING_CATEGORIES;
+  categories.forEach(cat => (DATA[cat] || []).forEach(r => {
     const pendingBucket = pendingBucketFor(cat, r);
     if (pendingBucket && (!bucket || pendingBucket === bucket)) cases.push({ cat, r, bucket: pendingBucket });
   }));
@@ -578,6 +581,7 @@ const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
    --------------------------------------------------------------------- */
 const DEMO_MODE = !CONFIG.API_URL;
 const LS_KEY = "avd2_case_register_demo";
+const SESSION_CACHE_KEY = "avd2_case_register_last_loaded";
 
 function demoStore() {
   let s = localStorage.getItem(LS_KEY);
@@ -588,6 +592,15 @@ function demoStore() {
   return seed;
 }
 function demoSave(store) { localStorage.setItem(LS_KEY, JSON.stringify(store)); }
+function readSessionCache() {
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(SESSION_CACHE_KEY) || "null");
+    return cached && cached.data && CATS.every(c => Array.isArray(cached.data[c])) ? cached : null;
+  } catch (_) { return null; }
+}
+function saveSessionCache(data) {
+  if (!DEMO_MODE) sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({ data, savedAt: Date.now() }));
+}
 
 async function apiList() {
   if (DEMO_MODE) return demoStore();
@@ -649,25 +662,34 @@ let currentTab = "overview";
 let editingId = null;
 let searchTerm = "";
 let statusFilterVal = "";
-let overviewDrilldown = { show: false, bucket: "" };
+let overviewDrilldown = { mode: "", category: "", bucket: "" };
 
 async function boot() {
   const dot = document.getElementById("apiDot");
   const statusText = document.getElementById("apiStatusText");
+  const cached = DEMO_MODE ? null : readSessionCache();
   if (DEMO_MODE) {
     statusText.textContent = "Demo mode — no Sheet connected";
   } else {
     statusText.textContent = "Connecting to Google Sheets…";
   }
   try {
+    if (cached) {
+      DATA = cached.data;
+      dot.classList.add("live");
+      statusText.textContent = "Showing last loaded data — refreshing…";
+      renderNav();
+      renderPage();
+    }
     DATA = await apiList();
+    saveSessionCache(DATA);
     if (!DEMO_MODE) {
       dot.classList.add("live");
       statusText.textContent = "Connected to Google Sheets";
     }
   } catch (err) {
-    DATA = {}; CATS.forEach(c => DATA[c] = []);
-    if (!DEMO_MODE) {
+    if (!cached) { DATA = {}; CATS.forEach(c => DATA[c] = []); }
+    if (!DEMO_MODE && !cached) {
       statusText.textContent = "Connection failed — see below";
     }
     showToast("Could not reach the API — check CONFIG.API_URL");
@@ -686,7 +708,7 @@ function renderNav() {
   }).join("");
   html += `<li class="sep"></li><li><button data-tab="reports" class="${currentTab==='reports'?'active':''}"><span class="nav-dot" style="background:transparent"></span><span class="nav-label">Reports</span></button></li>`;
   nav.innerHTML = html;
-  nav.querySelectorAll("button").forEach(b => b.onclick = () => { currentTab = b.dataset.tab; searchTerm=""; statusFilterVal=""; renderNav(); renderPage(); });
+  nav.querySelectorAll("button").forEach(b => b.onclick = () => { currentTab = b.dataset.tab; searchTerm=""; statusFilterVal=""; overviewDrilldown = { mode: "", category: "", bucket: "" }; renderNav(); renderPage(); });
 }
 
 function daysSince(dateStr) {
@@ -843,23 +865,31 @@ function renderOverviewCards() {
   CATS.forEach(c => {
     (DATA[c] || []).forEach(r => {
       total++;
-      if (!isCompleted(c, r)) pending++;
+      if (DASHBOARD_PENDING_CATEGORIES.includes(c) && !isCompleted(c, r)) pending++;
       const d = daysSince(r["Date of Receipt"]);
       if (d !== null && d > 15 && !isCompleted(c, r)) overdue++;
     });
   });
   const pendingWithDoPT = allPendingCases("DoPT").length;
   cards.innerHTML = `
-    <div class="card"><div class="card-label">Total cases</div><div class="card-value">${total}</div><div class="card-hint">Across all 4 categories</div></div>
+    <button class="card clickable" type="button" data-overview-drill="total"><div class="card-label">Total cases</div><div class="card-value">${total}</div><div class="card-hint">Click to view all cases</div></button>
     <button class="card clickable" type="button" data-pending-drill="all"><div class="card-label">Total pending</div><div class="card-value">${pending}</div><div class="card-hint">Click for pending-with breakup</div></button>
     <button class="card clickable" type="button" data-pending-drill="DoPT"><div class="card-label">Pending with DoPT</div><div class="card-value">${pendingWithDoPT}</div><div class="card-hint">Click to see cases</div></button>
     <div class="card"><div class="card-label">Overdue &gt;15 days</div><div class="card-value ${overdue?'alert':''}">${overdue}</div><div class="card-hint">Needs attention</div></div>
   `;
   cards.querySelectorAll("[data-pending-drill]").forEach(card => card.onclick = () => {
-    overviewDrilldown = { show: true, bucket: card.dataset.pendingDrill === "all" ? "" : card.dataset.pendingDrill };
+    overviewDrilldown = card.dataset.pendingDrill === "all"
+      ? { mode: "pending-categories", category: "", bucket: "" }
+      : { mode: "pending-cases", category: "", bucket: "DoPT" };
     document.getElementById("content").innerHTML = renderOverviewLists();
     attachRowHandlers();
   });
+  const totalCard = cards.querySelector("[data-overview-drill='total']");
+  totalCard.onclick = () => {
+    overviewDrilldown = { mode: "total-cases", category: "", bucket: "" };
+    document.getElementById("content").innerHTML = renderOverviewLists();
+    attachRowHandlers();
+  };
 }
 
 function renderOverviewCharts() {
@@ -907,7 +937,11 @@ function renderCategoryCharts(cat) {
 }
 
 function renderOverviewLists() {
-  const drilldown = overviewDrilldown.show ? renderPendingDrilldown() : "";
+  if (overviewDrilldown.mode === "total-cases") return renderAllCases();
+  if (overviewDrilldown.mode === "pending-categories") return renderPendingCategories();
+  if (overviewDrilldown.mode === "pending-buckets") return renderPendingBuckets(overviewDrilldown.category);
+  if (overviewDrilldown.mode === "pending-cases") return renderPendingCasesOnly(overviewDrilldown.category, overviewDrilldown.bucket);
+  const drilldown = "";
   return drilldown + CATS.map(c => {
     const rows = (DATA[c] || []).filter(r => !isCompleted(c, r))
       .sort((a,b) => new Date(a["Date of Receipt"]) - new Date(b["Date of Receipt"])).slice(0, 5);
@@ -924,30 +958,34 @@ function renderOverviewLists() {
   }).join("");
 }
 
-function renderPendingDrilldown() {
-  const all = allPendingCases();
-  const byBucket = {};
-  PENDING_BUCKET_ORDER.forEach(b => byBucket[b] = all.filter(item => item.bucket === b));
-  const rows = PENDING_BUCKET_ORDER.map(b => {
-    const categorySummary = CATS.map(c => {
-      const n = byBucket[b].filter(item => item.cat === c).length;
-      return n ? `${SCHEMAS[c].label}: ${n}` : "";
-    }).filter(Boolean).join(" · ");
-    return `<tr><td><button class="pending-link" data-pending-bucket="${b}">${PENDING_BUCKET_LABELS[b]}</button></td><td>${byBucket[b].length}</td><td>${categorySummary}</td></tr>`;
-  }).join("");
-  const selected = overviewDrilldown.bucket;
-  const cases = selected ? allPendingCases(selected) : [];
-  return `
-    <section class="pending-drilldown">
-      <div class="pending-drill-head"><h2 class="pending-drill-title">Total pending — where cases are pending</h2><button class="btn ghost small" data-close-pending-drill>Close</button></div>
-      <table class="pending-table"><thead><tr><th>Pending with</th><th>Cases</th><th>Category breakup</th></tr></thead><tbody>${rows}</tbody></table>
-      ${selected ? renderPendingCaseList(selected, cases) : ""}
-    </section>`;
+function pendingCategoryLabel(category) {
+  return ({ SLP: "SLPs", Appeals: "Appeals", Disciplinary: "DP Cases" })[category] || SCHEMAS[category].label;
 }
-
-function renderPendingCaseList(bucket, cases) {
-  const sorted = [...cases].sort((a,b) => new Date(a.r["Date of Receipt"]) - new Date(b.r["Date of Receipt"]));
-  return `<div style="margin-top:20px;"><div class="pending-drill-head"><h3 class="pending-drill-title" style="font-size:16px;">${PENDING_BUCKET_LABELS[bucket]} (${sorted.length})</h3><button class="btn ghost small" data-clear-pending-bucket>Show all groups</button></div><div class="register">${sorted.length ? sorted.map((item, i) => registerRow(item.cat, item.r, i)).join("") : `<div class="empty">No matching cases.</div>`}</div></div>`;
+function renderAllCases() {
+  const cases = CATS.flatMap(cat => (DATA[cat] || []).map(r => ({ cat, r })))
+    .sort((a, b) => new Date(b.r["Date of Receipt"]) - new Date(a.r["Date of Receipt"]));
+  return renderDrilldownCaseTable("All cases", cases, "Back to overview");
+}
+function renderPendingCategories() {
+  const rows = DASHBOARD_PENDING_CATEGORIES.map(category => {
+    const count = allPendingCases("", category).length;
+    return `<tr><td><button class="pending-link" data-pending-category="${category}">${pendingCategoryLabel(category)}</button></td><td>${count}</td></tr>`;
+  }).join("");
+  return `<section class="pending-drilldown"><div class="pending-drill-head"><h2 class="pending-drill-title">Total pending — select category</h2><button class="btn ghost small" data-back-overview>Close</button></div><table class="pending-table"><thead><tr><th>Category</th><th>Pending cases</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+}
+function renderPendingBuckets(category) {
+  const buckets = category === "Disciplinary" ? PENDING_BUCKET_ORDER : LITIGATION_DASHBOARD_BUCKETS;
+  const rows = buckets.map(bucket => `<tr><td><button class="pending-link" data-pending-bucket="${bucket}">${PENDING_BUCKET_LABELS[bucket]}</button></td><td>${allPendingCases(bucket, category).length}</td></tr>`).join("");
+  return `<section class="pending-drilldown"><div class="pending-drill-head"><h2 class="pending-drill-title">${pendingCategoryLabel(category)} — select where pending</h2><button class="btn ghost small" data-back-pending-categories>Back</button></div><table class="pending-table"><thead><tr><th>Pending with</th><th>Cases</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+}
+function renderPendingCasesOnly(category, bucket) {
+  const title = category ? `${pendingCategoryLabel(category)} — ${PENDING_BUCKET_LABELS[bucket]}` : PENDING_BUCKET_LABELS[bucket];
+  const cases = allPendingCases(bucket, category);
+  return renderDrilldownCaseTable(title, cases, "Back");
+}
+function renderDrilldownCaseTable(title, cases, backLabel) {
+  const sorted = [...cases].sort((a, b) => new Date(a.r["Date of Receipt"]) - new Date(b.r["Date of Receipt"]));
+  return `<section class="pending-drilldown"><div class="pending-drill-head"><h2 class="pending-drill-title">${title} (${sorted.length})</h2><button class="btn ghost small" data-back-from-cases>${backLabel}</button></div><div class="register">${sorted.length ? sorted.map((item, i) => registerRow(item.cat, item.r, i)).join("") : `<div class="empty">No matching cases.</div>`}</div></section>`;
 }
 
 function registerRow(cat, r, idx) {
@@ -1002,18 +1040,31 @@ function attachRowHandlers() {
     if (statusBtn) statusBtn.onclick = (e) => { e.stopPropagation(); openDrawer(cat, rec, "status"); };
   });
   document.querySelectorAll("[data-goto]").forEach(b => b.onclick = () => { currentTab = b.dataset.goto; renderNav(); renderPage(); });
+  document.querySelectorAll("[data-pending-category]").forEach(b => b.onclick = () => {
+    overviewDrilldown = { mode: "pending-buckets", category: b.dataset.pendingCategory, bucket: "" };
+    document.getElementById("content").innerHTML = renderOverviewLists();
+    attachRowHandlers();
+  });
   document.querySelectorAll("[data-pending-bucket]").forEach(b => b.onclick = () => {
+    overviewDrilldown.mode = "pending-cases";
     overviewDrilldown.bucket = b.dataset.pendingBucket;
     document.getElementById("content").innerHTML = renderOverviewLists();
     attachRowHandlers();
   });
-  document.querySelectorAll("[data-close-pending-drill]").forEach(b => b.onclick = () => {
-    overviewDrilldown = { show: false, bucket: "" };
+  document.querySelectorAll("[data-back-overview]").forEach(b => b.onclick = () => {
+    overviewDrilldown = { mode: "", category: "", bucket: "" };
     document.getElementById("content").innerHTML = renderOverviewLists();
     attachRowHandlers();
   });
-  document.querySelectorAll("[data-clear-pending-bucket]").forEach(b => b.onclick = () => {
-    overviewDrilldown.bucket = "";
+  document.querySelectorAll("[data-back-pending-categories]").forEach(b => b.onclick = () => {
+    overviewDrilldown = { mode: "pending-categories", category: "", bucket: "" };
+    document.getElementById("content").innerHTML = renderOverviewLists();
+    attachRowHandlers();
+  });
+  document.querySelectorAll("[data-back-from-cases]").forEach(b => b.onclick = () => {
+    overviewDrilldown = overviewDrilldown.category
+      ? { mode: "pending-buckets", category: overviewDrilldown.category, bucket: "" }
+      : { mode: "", category: "", bucket: "" };
     document.getElementById("content").innerHTML = renderOverviewLists();
     attachRowHandlers();
   });
@@ -1103,10 +1154,12 @@ function openDrawer(cat, record, mode) {
         await apiUpdate(cat, editingId, data);
         const idx = DATA[cat].findIndex(r => r.ID === editingId);
         DATA[cat][idx] = { ...DATA[cat][idx], ...data };
+        saveSessionCache(DATA);
         showToast(mode === "status" ? "Status updated" : "Entry updated");
       } else {
         const saved = await apiAdd(cat, data);
         DATA[cat].push(saved);
+        saveSessionCache(DATA);
         showToast("Entry added");
       }
       closeDrawer();
@@ -1185,12 +1238,17 @@ async function confirmDelete(cat, id) {
   if (!confirm("Delete this entry? This cannot be undone.")) return;
   await apiDelete(cat, id);
   DATA[cat] = DATA[cat].filter(r => r.ID !== id);
+  saveSessionCache(DATA);
   renderNav();
   renderPage();
   showToast("Entry deleted");
 }
 
 function showToast(msg) {
+  if (msg.startsWith("Could not reach the API") && readSessionCache()) {
+    document.getElementById("apiStatusText").textContent = "Showing last loaded data — refresh failed";
+    return;
+  }
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.add("show");
