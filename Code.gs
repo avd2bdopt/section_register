@@ -32,13 +32,13 @@
  */
 var SPREADSHEET_ID = "1I5WKmv3-hJNcc8kutou_SEtwpz8jOQMEm3yljrwL9OM";
 
-var LITIGATION_COLS = ['ID', 'Date of Receipt', 'Email Date', 'Email Time', 'File No', 'Computer No', 'RC No./Case No.', 'Subject', 'Status', 'Date Communicated to CBI', 'Remarks', 'Date received for DoPT action', 'Case Timeline'];
+var LITIGATION_COLS = ['ID', 'Date of Receipt', 'Email Date', 'Email Time', 'File No', 'Computer No', 'RC No./Case No.', 'Subject', 'Status', 'Date Communicated to CBI', 'Remarks', 'Date received for DoPT action', 'Case Timeline', 'Date file sent to DoLA', 'Date DoLA advice received'];
 
 var SHEETS = {
   SLP: LITIGATION_COLS,
   Appeals: LITIGATION_COLS,
   Withdrawal: LITIGATION_COLS,
-  Disciplinary: ['ID', 'Date of Receipt', 'Checklist Compliance', 'Date of Return of Proposal', 'Compliance Received from CBI', 'Date of Receiving Compliance', 'File No', 'Computer No', 'Subject', 'Stage', 'Date of IO Change Request', 'Date of PO Change Request', 'Status', 'Remarks', 'Name & Designation of Delinquent', 'Present Status', 'Under Stay (CAT/High Court)', 'Charge Memo Date', 'Date received for DoPT action', 'Date final order issued', 'Case Timeline']
+  Disciplinary: ['ID', 'Date of Receipt', 'Checklist Compliance', 'Date of Return of Proposal', 'Compliance Received from CBI', 'Date of Receiving Compliance', 'File No', 'Computer No', 'Subject', 'Stage', 'Date of IO Change Request', 'Date of PO Change Request', 'Status', 'Remarks', 'Name & Designation of Delinquent', 'Present Status', 'Under Stay (CAT/High Court)', 'Charge Memo Date', 'Date received for DoPT action', 'Date final order issued', 'Case Timeline', 'Date chargesheet issued', 'Date representation sought from CO', 'Date representation received from CO', 'Date IO/PO names sought from CBI', 'Date IO/PO appointed', 'Date inquiry commenced', 'Date inquiry report received', 'Date representation sought on inquiry report', 'Date representation received on inquiry report', 'Date case sent to UPSC', 'Date UPSC advice received', 'Date representation sought on UPSC advice', 'Date representation received on UPSC advice']
 };
 
 function doGet(e) {

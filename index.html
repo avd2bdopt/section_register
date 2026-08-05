@@ -223,7 +223,7 @@
   .timeline-event.complete .timeline-dot{background:var(--sage);border-color:#DAE8D8;}
   .timeline-event-label{font-size:13px;color:var(--ink);font-weight:600;padding-bottom:3px;}
   .timeline-event-note{font-size:11.5px;color:var(--slate-light);line-height:1.45;padding-bottom:10px;}
-  .monthly-disposal{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:26px;box-shadow:0 8px 24px rgba(28,43,74,.045);}
+  .monthly-disposal{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:26px;box-shadow:0 8px 24px rgba(28,43,74,.045);overflow-x:auto;}
   .monthly-disposal-head{display:flex;justify-content:space-between;gap:16px;align-items:baseline;margin-bottom:12px;}
   .monthly-disposal-title{font-family:var(--serif);font-size:19px;color:var(--ink);margin:0;}
   .monthly-disposal-total{font-family:var(--mono);font-size:12px;color:var(--sage);font-weight:600;}
@@ -451,6 +451,8 @@ function litigationFields() {
     { key: "RC No./Case No.", label: "RC No./Case No.", type: "text" },
     { key: "Subject", label: "Subject", type: "textarea", required: true },
     { key: "Status", label: "Status", type: "select", options: LITIGATION_STATUSES, default: "Received and under process" },
+    { key: "Date file sent to DoLA", label: "Date file sent to DoLA", type: "date" },
+    { key: "Date DoLA advice received", label: "Date DoLA advice received", type: "date" },
     { key: "Date Communicated to CBI", label: "Date communicated to CBI", type: "date", showIf: { field: "Status", equals: "Communicated to CBI" } },
     { key: "Date received for DoPT action", label: "Date received for DoPT action / latest representation", type: "date", hint: "Use the date on which the case, reply or representation came to DoPT and awaits action." },
     { key: "Remarks", label: "Remarks", type: "textarea" },
@@ -542,6 +544,21 @@ const LITIGATION_DASHBOARD_BUCKETS = ["DoPT", "DoLA"];
 const ACTION_DATE_KEY = "Date received for DoPT action";
 const TIMELINE_KEY = "Case Timeline";
 const FINAL_ORDER_DATE_KEY = "Date final order issued";
+const DP_TIMELINE_DATE_FIELDS = [
+  { key: "Date chargesheet issued", label: "Date chargesheet issued", type: "date" },
+  { key: "Date representation sought from CO", label: "Date representation sought from CO (on chargesheet)", type: "date" },
+  { key: "Date representation received from CO", label: "Date representation received from CO (on chargesheet)", type: "date" },
+  { key: "Date IO/PO names sought from CBI", label: "Date names of IO and PO sought from CBI", type: "date" },
+  { key: "Date IO/PO appointed", label: "Date IO and PO appointed", type: "date" },
+  { key: "Date inquiry commenced", label: "Date inquiry commenced", type: "date" },
+  { key: "Date inquiry report received", label: "Date inquiry report received", type: "date" },
+  { key: "Date representation sought on inquiry report", label: "Date representation sought on inquiry report", type: "date" },
+  { key: "Date representation received on inquiry report", label: "Date representation received on inquiry report", type: "date" },
+  { key: "Date case sent to UPSC", label: "Date case sent to UPSC", type: "date" },
+  { key: "Date UPSC advice received", label: "Date UPSC advice received", type: "date" },
+  { key: "Date representation sought on UPSC advice", label: "Date representation sought on UPSC advice", type: "date" },
+  { key: "Date representation received on UPSC advice", label: "Date representation received on UPSC advice", type: "date" }
+];
 
 /* Completion is determined from the operative milestone, not merely from
    the editable Status field. This keeps terminal cases out of all pending
@@ -554,6 +571,36 @@ function isCompleted(cat, r) {
 function disposalDate(cat, r) {
   if (!isCompleted(cat, r)) return "";
   return cat === "Disciplinary" ? r[FINAL_ORDER_DATE_KEY] : r["Date Communicated to CBI"];
+}
+function automaticTimelineEvents(cat, record) {
+  const litigation = [
+    ["Date file sent to DoLA", "File sent to DoLA"],
+    ["Date DoLA advice received", "DoLA advice received"],
+    ["Date Communicated to CBI", "Communicated to CBI"]
+  ];
+  const disciplinary = [
+    ["Date of Return of Proposal", "Case returned to CBI for checklist compliance"],
+    ["Date of Receiving Compliance", "Compliance received from CBI"],
+    ["Date chargesheet issued", "Chargesheet issued"],
+    ["Date representation sought from CO", "Representation sought from CO (chargesheet)"],
+    ["Date representation received from CO", "Representation received from CO (chargesheet)"],
+    ["Date IO/PO names sought from CBI", "Names of IO and PO sought from CBI"],
+    ["Date IO/PO appointed", "IO and PO appointed"],
+    ["Date inquiry commenced", "Inquiry commenced"],
+    ["Date of IO Change Request", "CBI request for change of IO"],
+    ["Date of PO Change Request", "CBI request for change of PO"],
+    ["Date inquiry report received", "Inquiry report received"],
+    ["Date representation sought on inquiry report", "Representation sought on inquiry report"],
+    ["Date representation received on inquiry report", "Representation received on inquiry report"],
+    ["Date case sent to UPSC", "Case sent to UPSC"],
+    ["Date UPSC advice received", "UPSC advice received"],
+    ["Date representation sought on UPSC advice", "Representation sought on UPSC advice"],
+    ["Date representation received on UPSC advice", "Representation received on UPSC advice"],
+    [FINAL_ORDER_DATE_KEY, "Final order issued"]
+  ];
+  return (cat === "Disciplinary" ? disciplinary : litigation)
+    .filter(item => record[item[0]])
+    .map(item => ({ date: record[item[0]], label: item[1], note: "Recorded milestone" }));
 }
 function pendingBucketFor(cat, r) {
   if (isCompleted(cat, r)) return null;
@@ -607,6 +654,7 @@ const SCHEMAS = {
       { key: "Stage", label: "Stage of case", type: "select", options: DISCIPLINARY_STAGES, default: "Case Received from CBI" },
       { key: "Date of IO Change Request", label: "Date of CBI request (change of IO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of IO" } },
       { key: "Date of PO Change Request", label: "Date of CBI request (change of PO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of PO" } },
+      ...DP_TIMELINE_DATE_FIELDS,
       { key: "Date received for DoPT action", label: "Date received for DoPT action / latest representation", type: "date", hint: "Use the latest date on which a reply, WSD or representation was received by DoPT for action." },
       { key: "Date final order issued", label: "Date final order issued", type: "date", showIf: { field: "Stage", equals: "Final Order issued with the approval of DA" } },
       { key: "Present Status", label: "Present status (narrative, used in reports)", type: "textarea" },
@@ -994,11 +1042,16 @@ function monthlyDisposals(n) {
   const now = new Date();
   for (let i = (n || 6) - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const row = { year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleString("en-IN", { month: "short", year: "numeric" }), total: 0 };
+    const row = { year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleString("en-IN", { month: "short", year: "numeric" }), total: 0, received: 0 };
     CATS.forEach(c => row[c] = 0);
     buckets.push(row);
   }
   CATS.forEach(cat => (DATA[cat] || []).forEach(r => {
+    const received = new Date(r["Date of Receipt"]);
+    if (!isNaN(received)) {
+      const receiptBucket = buckets.find(b => b.year === received.getFullYear() && b.month === received.getMonth());
+      if (receiptBucket) receiptBucket.received++;
+    }
     const date = disposalDate(cat, r);
     if (!date) return;
     const d = new Date(date);
@@ -1011,11 +1064,13 @@ function monthlyDisposals(n) {
 function renderMonthlyDisposalDashboard() {
   const rows = monthlyDisposals(6);
   const total = rows.reduce((sum, row) => sum + row.total, 0);
+  const totalReceived = rows.reduce((sum, row) => sum + row.received, 0);
   const columns = ["SLP", "Appeals", "Withdrawal", "Disciplinary"];
   const labels = { SLP: "SLPs", Appeals: "Appeals", Withdrawal: "Withdrawals", Disciplinary: "DP Cases" };
-  const body = rows.map(row => `<tr><td>${row.label}</td><td>${row.total}</td>${columns.map(c => `<td>${row[c]}</td>`).join("")}</tr>`).join("");
+  const percent = (disposed, received) => received ? `${((disposed / received) * 100).toFixed(1)}%` : "—";
+  const body = rows.map(row => `<tr><td>${row.label}</td><td>${row.received}</td><td>${row.total}</td><td>${percent(row.total, row.received)}</td>${columns.map(c => `<td>${row[c]}</td>`).join("")}</tr>`).join("");
   const totals = columns.map(c => rows.reduce((sum, row) => sum + row[c], 0));
-  return `<section class="monthly-disposal"><div class="monthly-disposal-head"><h2 class="monthly-disposal-title">Monthly disposal — last 6 months</h2><div class="monthly-disposal-total">${total} total disposed</div></div><table class="monthly-disposal-table"><thead><tr><th>Month</th><th>Total disposed</th>${columns.map(c => `<th>${labels[c]}</th>`).join("")}</tr></thead><tbody>${body}<tr><td>Total</td><td>${total}</td>${totals.map(n => `<td>${n}</td>`).join("")}</tr></tbody></table></section>`;
+  return `<section class="monthly-disposal"><div class="monthly-disposal-head"><h2 class="monthly-disposal-title">Monthly disposal — last 6 months</h2><div class="monthly-disposal-total">${total} disposed / ${totalReceived} received</div></div><table class="monthly-disposal-table"><thead><tr><th>Month</th><th>Cases received</th><th>Total disposed</th><th>% disposed</th>${columns.map(c => `<th>${labels[c]}</th>`).join("")}</tr></thead><tbody>${body}<tr><td>Total</td><td>${totalReceived}</td><td>${total}</td><td>${percent(total, totalReceived)}</td>${totals.map(n => `<td>${n}</td>`).join("")}</tr></tbody></table></section>`;
 }
 
 function renderOverviewLists() {
@@ -1174,6 +1229,7 @@ function escapeHtml(s) {
 function timelineEvents(cat, record) {
   const events = [];
   if (record["Date of Receipt"]) events.push({ date: record["Date of Receipt"], label: "Case received", note: "Initial receipt" });
+  automaticTimelineEvents(cat, record).forEach(event => events.push(event));
   String(record[TIMELINE_KEY] || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean).forEach(line => {
     const parts = line.split("|").map(part => part.trim());
     const date = /^\d{4}-\d{2}-\d{2}$/.test(parts[0]) ? parts.shift() : "";

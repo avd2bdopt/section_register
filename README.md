@@ -182,14 +182,17 @@ last received on that date; the case will appear in this attention list only
 after 15 days have passed without action. Blank dates are deliberately not
 counted, so existing official records are not inferred or altered.
 
-Each case detail popup also shows a graphical **Case timeline**. Add verified
-milestones in the *Case Timeline* field, one per line, using:
-`YYYY-MM-DD | Stage / action | optional note`. For DP matters, this can record
-the full path from receipt through chargesheet, CO representation, IA/PO
-appointment, UPSC and final order. The overview includes a **Monthly disposal**
-table with total disposals and the SLP, Appeals, Withdrawal and DP breakup.
-SLP, Appeals and Withdrawal disposals use the Date Communicated to CBI; DP
-disposals use the Date final order issued field.
+Each case detail popup also shows a graphical **Case timeline**. The timeline
+now builds automatically from verified milestone-date fields: DoLA movement
+for litigation, and chargesheet, CO representation, IO/PO, inquiry, UPSC and
+final-order steps for DP. The optional *Case Timeline* field remains available
+for additional events, one per line: `YYYY-MM-DD | Stage / action | note`.
+
+The overview includes a **Monthly disposal** table with Cases Received, Total
+Disposed, Percentage Disposed, and the SLP, Appeals, Withdrawal and DP
+breakup. Percentage disposed is calculated as disposals divided by receipts
+within that same month. SLP, Appeals and Withdrawal disposals use the Date
+Communicated to CBI; DP disposals use the Date final order issued field.
 
 Completion is derived from the operative terminal milestone: SLP and Appeal
 matters are no longer pending once their Status is **Communicated to CBI**;
