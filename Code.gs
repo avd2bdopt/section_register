@@ -32,13 +32,13 @@
  */
 var SPREADSHEET_ID = "1I5WKmv3-hJNcc8kutou_SEtwpz8jOQMEm3yljrwL9OM";
 
-var LITIGATION_COLS = ['ID', 'Date of Receipt', 'Email Date', 'Email Time', 'File No', 'Computer No', 'RC No./Case No.', 'Subject', 'Status', 'Date Communicated to CBI', 'Remarks', 'Date received for DoPT action'];
+var LITIGATION_COLS = ['ID', 'Date of Receipt', 'Email Date', 'Email Time', 'File No', 'Computer No', 'RC No./Case No.', 'Subject', 'Status', 'Date Communicated to CBI', 'Remarks', 'Date received for DoPT action', 'Case Timeline'];
 
 var SHEETS = {
   SLP: LITIGATION_COLS,
   Appeals: LITIGATION_COLS,
   Withdrawal: LITIGATION_COLS,
-  Disciplinary: ['ID', 'Date of Receipt', 'Checklist Compliance', 'Date of Return of Proposal', 'Compliance Received from CBI', 'Date of Receiving Compliance', 'File No', 'Computer No', 'Subject', 'Stage', 'Date of IO Change Request', 'Date of PO Change Request', 'Status', 'Remarks', 'Name & Designation of Delinquent', 'Present Status', 'Under Stay (CAT/High Court)', 'Charge Memo Date', 'Date received for DoPT action']
+  Disciplinary: ['ID', 'Date of Receipt', 'Checklist Compliance', 'Date of Return of Proposal', 'Compliance Received from CBI', 'Date of Receiving Compliance', 'File No', 'Computer No', 'Subject', 'Stage', 'Date of IO Change Request', 'Date of PO Change Request', 'Status', 'Remarks', 'Name & Designation of Delinquent', 'Present Status', 'Under Stay (CAT/High Court)', 'Charge Memo Date', 'Date received for DoPT action', 'Date final order issued', 'Case Timeline']
 };
 
 function doGet(e) {

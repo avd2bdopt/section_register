@@ -211,6 +211,27 @@
   .case-detail-grid dt,.case-detail-grid dd{margin:0;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .case-detail-grid dt{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--slate-light);}
   .case-detail-grid dd{color:var(--slate);word-break:break-word;}
+  .case-timeline{margin:18px 0 22px;padding:16px 16px 6px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg,#F7F5EE,#F1F5F7);}
+  .case-timeline-title{font-family:var(--serif);font-size:17px;color:var(--ink);margin:0 0 14px;}
+  .timeline-event{display:grid;grid-template-columns:96px 22px 1fr;gap:10px;min-height:52px;position:relative;}
+  .timeline-date{font-family:var(--mono);font-size:11px;color:var(--slate-light);padding-top:3px;text-align:right;}
+  .timeline-rail{position:relative;display:flex;justify-content:center;}
+  .timeline-rail::after{content:"";position:absolute;top:15px;bottom:-6px;width:2px;background:var(--border-strong);}
+  .timeline-event:last-child .timeline-rail::after{display:none;}
+  .timeline-dot{width:13px;height:13px;border-radius:50%;background:var(--blue);border:3px solid #DCE8F3;z-index:1;margin-top:1px;box-shadow:0 0 0 2px rgba(46,90,140,.12);}
+  .timeline-event.current .timeline-dot{background:var(--amber);border-color:#F5E9CD;box-shadow:0 0 0 3px rgba(147,105,30,.16);}
+  .timeline-event.complete .timeline-dot{background:var(--sage);border-color:#DAE8D8;}
+  .timeline-event-label{font-size:13px;color:var(--ink);font-weight:600;padding-bottom:3px;}
+  .timeline-event-note{font-size:11.5px;color:var(--slate-light);line-height:1.45;padding-bottom:10px;}
+  .monthly-disposal{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:26px;box-shadow:0 8px 24px rgba(28,43,74,.045);}
+  .monthly-disposal-head{display:flex;justify-content:space-between;gap:16px;align-items:baseline;margin-bottom:12px;}
+  .monthly-disposal-title{font-family:var(--serif);font-size:19px;color:var(--ink);margin:0;}
+  .monthly-disposal-total{font-family:var(--mono);font-size:12px;color:var(--sage);font-weight:600;}
+  .monthly-disposal-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .monthly-disposal-table th,.monthly-disposal-table td{padding:9px 8px;border-bottom:1px solid var(--border);text-align:right;}
+  .monthly-disposal-table th:first-child,.monthly-disposal-table td:first-child{text-align:left;}
+  .monthly-disposal-table th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-light);}
+  .monthly-disposal-table tr:last-child td{border-bottom:0;font-weight:700;color:var(--ink);background:#F5F1E5;}
 
   /* ---------- Drawer / form ---------- */
   .overlay{
@@ -432,7 +453,8 @@ function litigationFields() {
     { key: "Status", label: "Status", type: "select", options: LITIGATION_STATUSES, default: "Received and under process" },
     { key: "Date Communicated to CBI", label: "Date communicated to CBI", type: "date", showIf: { field: "Status", equals: "Communicated to CBI" } },
     { key: "Date received for DoPT action", label: "Date received for DoPT action / latest representation", type: "date", hint: "Use the date on which the case, reply or representation came to DoPT and awaits action." },
-    { key: "Remarks", label: "Remarks", type: "textarea" }
+    { key: "Remarks", label: "Remarks", type: "textarea" },
+    { key: "Case Timeline", label: "Case timeline", type: "textarea", hint: "One event per line: YYYY-MM-DD | Stage / action | optional note. These entries appear as the graphical timeline." }
   ];
 }
 
@@ -501,7 +523,7 @@ function disciplinaryBucket(r) {
   if (mapped === undefined) return "DoPT";
   return mapped;
 }
-const COMPLETED_LITIGATION_CATEGORIES = ["SLP", "Appeals"];
+const COMPLETED_LITIGATION_CATEGORIES = ["SLP", "Appeals", "Withdrawal"];
 const LITIGATION_PENDING_BUCKETS = {
   "Forwarded to DoLA": "DoLA"
 };
@@ -515,9 +537,11 @@ const PENDING_BUCKET_LABELS = {
   CO: "Pending with Charged Officer (CO)",
   Stayed: "Cases stayed by CAT / High Court"
 };
-const DASHBOARD_PENDING_CATEGORIES = ["SLP", "Appeals", "Disciplinary"];
+const DASHBOARD_PENDING_CATEGORIES = ["SLP", "Appeals", "Withdrawal", "Disciplinary"];
 const LITIGATION_DASHBOARD_BUCKETS = ["DoPT", "DoLA"];
 const ACTION_DATE_KEY = "Date received for DoPT action";
+const TIMELINE_KEY = "Case Timeline";
+const FINAL_ORDER_DATE_KEY = "Date final order issued";
 
 /* Completion is determined from the operative milestone, not merely from
    the editable Status field. This keeps terminal cases out of all pending
@@ -526,6 +550,10 @@ function isCompleted(cat, r) {
   if (COMPLETED_LITIGATION_CATEGORIES.includes(cat)) return r.Status === "Communicated to CBI";
   if (cat === "Disciplinary") return r.Stage === "Final Order issued with the approval of DA";
   return r.Status === "Completed";
+}
+function disposalDate(cat, r) {
+  if (!isCompleted(cat, r)) return "";
+  return cat === "Disciplinary" ? r[FINAL_ORDER_DATE_KEY] : r["Date Communicated to CBI"];
 }
 function pendingBucketFor(cat, r) {
   if (isCompleted(cat, r)) return null;
@@ -565,7 +593,7 @@ const SCHEMAS = {
     label: "Disciplinary Proceedings",
     desc: "Disciplinary proceeding cases and their current stage.",
     statusOptions: DISCIPLINARY_STATUSES,
-    statusQuickFields: ["Checklist Compliance", "Date of Return of Proposal", "Compliance Received from CBI", "Date of Receiving Compliance", "Stage", "Date of IO Change Request", "Date of PO Change Request", "Date received for DoPT action", "Status"],
+    statusQuickFields: ["Checklist Compliance", "Date of Return of Proposal", "Compliance Received from CBI", "Date of Receiving Compliance", "Stage", "Date of IO Change Request", "Date of PO Change Request", "Date received for DoPT action", "Date final order issued", "Status"],
     fields: [
       { key: "Date of Receipt", label: "Date of receipt", type: "date", required: true },
       { key: "Name & Designation of Delinquent", label: "Name & designation of delinquent officer", type: "text" },
@@ -580,11 +608,13 @@ const SCHEMAS = {
       { key: "Date of IO Change Request", label: "Date of CBI request (change of IO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of IO" } },
       { key: "Date of PO Change Request", label: "Date of CBI request (change of PO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of PO" } },
       { key: "Date received for DoPT action", label: "Date received for DoPT action / latest representation", type: "date", hint: "Use the latest date on which a reply, WSD or representation was received by DoPT for action." },
+      { key: "Date final order issued", label: "Date final order issued", type: "date", showIf: { field: "Stage", equals: "Final Order issued with the approval of DA" } },
       { key: "Present Status", label: "Present status (narrative, used in reports)", type: "textarea" },
       { key: "Under Stay (CAT/High Court)", label: "Under stay by CAT / High Court?", type: "select", options: ["No", "Yes"], default: "No" },
       { key: "Charge Memo Date", label: "Date of issue of charge memo", type: "date", showIf: { field: "Under Stay (CAT/High Court)", equals: "Yes" } },
       { key: "Status", label: "Status", type: "select", options: DISCIPLINARY_STATUSES, default: "Received and under process" },
-      { key: "Remarks", label: "Remarks", type: "textarea" }
+      { key: "Remarks", label: "Remarks", type: "textarea" },
+      { key: "Case Timeline", label: "Case timeline", type: "textarea", hint: "One event per line: YYYY-MM-DD | Stage / action | optional note. These entries appear as the graphical timeline." }
     ]
   }
 };
@@ -959,6 +989,35 @@ function renderCategoryCharts(cat) {
     chartCard("Receipts — last 6 months", svgBarChart(monthly, { width: 300, height: 140 }));
 }
 
+function monthlyDisposals(n) {
+  const buckets = [];
+  const now = new Date();
+  for (let i = (n || 6) - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const row = { year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleString("en-IN", { month: "short", year: "numeric" }), total: 0 };
+    CATS.forEach(c => row[c] = 0);
+    buckets.push(row);
+  }
+  CATS.forEach(cat => (DATA[cat] || []).forEach(r => {
+    const date = disposalDate(cat, r);
+    if (!date) return;
+    const d = new Date(date);
+    if (isNaN(d)) return;
+    const bucket = buckets.find(b => b.year === d.getFullYear() && b.month === d.getMonth());
+    if (bucket) { bucket[cat]++; bucket.total++; }
+  }));
+  return buckets;
+}
+function renderMonthlyDisposalDashboard() {
+  const rows = monthlyDisposals(6);
+  const total = rows.reduce((sum, row) => sum + row.total, 0);
+  const columns = ["SLP", "Appeals", "Withdrawal", "Disciplinary"];
+  const labels = { SLP: "SLPs", Appeals: "Appeals", Withdrawal: "Withdrawals", Disciplinary: "DP Cases" };
+  const body = rows.map(row => `<tr><td>${row.label}</td><td>${row.total}</td>${columns.map(c => `<td>${row[c]}</td>`).join("")}</tr>`).join("");
+  const totals = columns.map(c => rows.reduce((sum, row) => sum + row[c], 0));
+  return `<section class="monthly-disposal"><div class="monthly-disposal-head"><h2 class="monthly-disposal-title">Monthly disposal — last 6 months</h2><div class="monthly-disposal-total">${total} total disposed</div></div><table class="monthly-disposal-table"><thead><tr><th>Month</th><th>Total disposed</th>${columns.map(c => `<th>${labels[c]}</th>`).join("")}</tr></thead><tbody>${body}<tr><td>Total</td><td>${total}</td>${totals.map(n => `<td>${n}</td>`).join("")}</tr></tbody></table></section>`;
+}
+
 function renderOverviewLists() {
   if (overviewDrilldown.mode === "total-cases") return renderAllCases();
   if (overviewDrilldown.mode === "pending-categories") return renderPendingCategories();
@@ -966,7 +1025,7 @@ function renderOverviewLists() {
   if (overviewDrilldown.mode === "pending-cases") return renderPendingCasesOnly(overviewDrilldown.category, overviewDrilldown.bucket);
   if (overviewDrilldown.mode === "no-action-cases") return renderNoActionCases();
   const drilldown = "";
-  return drilldown + CATS.map(c => {
+  return drilldown + renderMonthlyDisposalDashboard() + CATS.map(c => {
     const rows = (DATA[c] || []).filter(r => !isCompleted(c, r))
       .sort((a,b) => new Date(a["Date of Receipt"]) - new Date(b["Date of Receipt"])).slice(0, 5);
     return `
@@ -983,7 +1042,7 @@ function renderOverviewLists() {
 }
 
 function pendingCategoryLabel(category) {
-  return ({ SLP: "SLPs", Appeals: "Appeals", Disciplinary: "DP Cases" })[category] || SCHEMAS[category].label;
+  return ({ SLP: "SLPs", Appeals: "Appeals", Withdrawal: "Withdrawals", Disciplinary: "DP Cases" })[category] || SCHEMAS[category].label;
 }
 function renderAllCases() {
   const cases = CATS.flatMap(cat => (DATA[cat] || []).map(r => ({ cat, r })))
@@ -1112,13 +1171,36 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 }
 
+function timelineEvents(cat, record) {
+  const events = [];
+  if (record["Date of Receipt"]) events.push({ date: record["Date of Receipt"], label: "Case received", note: "Initial receipt" });
+  String(record[TIMELINE_KEY] || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean).forEach(line => {
+    const parts = line.split("|").map(part => part.trim());
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(parts[0]) ? parts.shift() : "";
+    if (parts[0]) events.push({ date, label: parts[0], note: parts.slice(1).join(" | ") });
+  });
+  const currentLabel = cat === "Disciplinary" ? record.Stage : record.Status;
+  if (currentLabel && !events.some(event => event.label === currentLabel)) {
+    events.push({ date: disposalDate(cat, record) || record[ACTION_DATE_KEY] || "", label: currentLabel, note: "Current stage / status", current: true });
+  }
+  events.sort((a, b) => (a.date || "9999-12-31").localeCompare(b.date || "9999-12-31"));
+  if (events.length) events[events.length - 1].current = !isCompleted(cat, record);
+  return events;
+}
+function renderCaseTimeline(cat, record) {
+  const events = timelineEvents(cat, record);
+  if (!events.length) return "";
+  return `<section class="case-timeline"><h3 class="case-timeline-title">Case timeline</h3>${events.map(event => `<div class="timeline-event ${event.current ? "current" : ""} ${isCompleted(cat, record) && event === events[events.length - 1] ? "complete" : ""}"><div class="timeline-date">${escapeHtml(event.date || "Date not entered")}</div><div class="timeline-rail"><span class="timeline-dot"></span></div><div><div class="timeline-event-label">${escapeHtml(event.label)}</div>${event.note ? `<div class="timeline-event-note">${escapeHtml(event.note)}</div>` : ""}</div></div>`).join("")}</section>`;
+}
+
 function openCaseDetail(cat, record) {
   if (!record) return;
   const schema = SCHEMAS[cat];
-  const fields = schema.fields.filter(f => f.key !== "ID");
+  const fields = schema.fields.filter(f => f.key !== "ID" && f.key !== TIMELINE_KEY);
   document.getElementById("drawerTitle").textContent = "Case details";
   document.getElementById("drawerSub").textContent = schema.label;
   document.getElementById("entryForm").innerHTML = `
+    ${renderCaseTimeline(cat, record)}
     <dl class="case-detail-grid">${fields.map(f => `<dt>${escapeHtml(f.label)}</dt><dd>${escapeHtml(record[f.key] || "—")}</dd>`).join("")}</dl>
     <div class="drawer-actions"><button type="button" class="btn ghost" id="detailCloseBtn">Close</button><button type="button" class="btn" id="detailEditBtn">Edit case</button></div>`;
   document.getElementById("detailCloseBtn").onclick = closeDrawer;
