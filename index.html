@@ -465,8 +465,8 @@ const DISCIPLINARY_STAGES = [
   "Case Returned to CBI for non-compliance with the Checklist",
   "Chargesheet under preparation",
   "Chargesheet issued",
-  "Representation of CO sought",
-  "Representation of CO received",
+  "Written Statement of Defence (WSD) / reply sought from CO",
+  "Written Statement of Defence (WSD) / reply received from CO",
   "Names of IO and PO have been sought from CBI",
   "IO and PO have been appointed",
   "Inquiry in Progress",
@@ -474,6 +474,7 @@ const DISCIPLINARY_STAGES = [
   "Request received from CBI for change of PO",
   "Inquiry report received",
   "Representation of CO sought on Inquiry Report",
+  "Representation of CO received on Inquiry Report",
   "Case sent to UPSC",
   "UPSC's advice received",
   "Representation of CO sought on UPSC's advice",
@@ -496,6 +497,9 @@ const STAGE_TO_BUCKET = {
   "Case Returned to CBI for non-compliance with the Checklist": "CBI",
   "Chargesheet under preparation": "DoPT",
   "Chargesheet issued": "DoPT",
+  "Written Statement of Defence (WSD) / reply sought from CO": "CO",
+  "Written Statement of Defence (WSD) / reply received from CO": "DoPT",
+  // Older records retain their original wording until manually reclassified.
   "Representation of CO sought": "CO",
   "Representation of CO received": "DoPT",
   "Names of IO and PO have been sought from CBI": "CBI",
@@ -505,6 +509,7 @@ const STAGE_TO_BUCKET = {
   "Request received from CBI for change of PO": "DoPT",
   "Inquiry report received": "DoPT",
   "Representation of CO sought on Inquiry Report": "CO",
+  "Representation of CO received on Inquiry Report": "DoPT",
   "Case sent to UPSC": "UPSC",
   "UPSC's advice received": "DoPT",
   "Representation of CO sought on UPSC's advice": "CO",
@@ -546,8 +551,8 @@ const TIMELINE_KEY = "Case Timeline";
 const FINAL_ORDER_DATE_KEY = "Date final order issued";
 const DP_TIMELINE_DATE_FIELDS = [
   { key: "Date chargesheet issued", label: "Date chargesheet issued", type: "date" },
-  { key: "Date representation sought from CO", label: "Date representation sought from CO (on chargesheet)", type: "date" },
-  { key: "Date representation received from CO", label: "Date representation received from CO (on chargesheet)", type: "date" },
+  { key: "Date representation sought from CO", label: "Date WSD / reply sought from CO (on chargesheet)", type: "date" },
+  { key: "Date representation received from CO", label: "Date WSD / reply received from CO (on chargesheet)", type: "date" },
   { key: "Date IO/PO names sought from CBI", label: "Date names of IO and PO sought from CBI", type: "date" },
   { key: "Date IO/PO appointed", label: "Date IO and PO appointed", type: "date" },
   { key: "Date inquiry commenced", label: "Date inquiry commenced", type: "date" },
@@ -582,8 +587,8 @@ function automaticTimelineEvents(cat, record) {
     ["Date of Return of Proposal", "Case returned to CBI for checklist compliance"],
     ["Date of Receiving Compliance", "Compliance received from CBI"],
     ["Date chargesheet issued", "Chargesheet issued"],
-    ["Date representation sought from CO", "Representation sought from CO (chargesheet)"],
-    ["Date representation received from CO", "Representation received from CO (chargesheet)"],
+    ["Date representation sought from CO", "WSD / reply sought from CO (chargesheet)"],
+    ["Date representation received from CO", "WSD / reply received from CO (chargesheet)"],
     ["Date IO/PO names sought from CBI", "Names of IO and PO sought from CBI"],
     ["Date IO/PO appointed", "IO and PO appointed"],
     ["Date inquiry commenced", "Inquiry commenced"],
@@ -1294,7 +1299,8 @@ function openDrawer(cat, record, mode) {
     const val = record ? (record[f.key] ?? "") : (f.default || "");
     let inputHtml;
     if (f.type === "select") {
-      inputHtml = `<select name="${f.key}">${f.options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join("")}</select>`;
+      const options = val && !f.options.includes(val) ? [val, ...f.options] : f.options;
+      inputHtml = `<select name="${f.key}">${options.map(o => `<option value="${escapeHtml(o)}" ${val===o?'selected':''}>${escapeHtml(o)}${o===val && !f.options.includes(val) ? " (legacy value)" : ""}</option>`).join("")}</select>`;
     } else if (f.type === "textarea") {
       inputHtml = `<textarea name="${f.key}" ${f.required?'required':''}>${escapeHtml(val)}</textarea>`;
     } else {

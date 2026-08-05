@@ -30,7 +30,9 @@
  * /d/ and /edit) — this removes any ambiguity about which spreadsheet
  * the script is bound to.
  */
-var SPREADSHEET_ID = "1I5WKmv3-hJNcc8kutou_SEtwpz8jOQMEm3yljrwL9OM";
+// Bound-script deployment: use the Sheet that contains this Apps Script.
+// Set an ID only if this script is intentionally converted to standalone.
+var SPREADSHEET_ID = '';
 
 var LITIGATION_COLS = ['ID', 'Date of Receipt', 'Email Date', 'Email Time', 'File No', 'Computer No', 'RC No./Case No.', 'Subject', 'Status', 'Date Communicated to CBI', 'Remarks', 'Date received for DoPT action', 'Case Timeline', 'Date file sent to DoLA', 'Date DoLA advice received'];
 
@@ -100,7 +102,11 @@ function doPost(e) {
 
 var _ssCache_ = null;
 function getSpreadsheet_() {
-  if (!_ssCache_) _ssCache_ = SpreadsheetApp.openById(SPREADSHEET_ID);
+  if (!_ssCache_) {
+    _ssCache_ = SPREADSHEET_ID
+      ? SpreadsheetApp.openById(SPREADSHEET_ID)
+      : SpreadsheetApp.getActiveSpreadsheet();
+  }
   return _ssCache_;
 }
 
