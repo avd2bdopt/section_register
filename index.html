@@ -456,7 +456,7 @@ function litigationFields() {
     { key: "Date Communicated to CBI", label: "Date communicated to CBI", type: "date", showIf: { field: "Status", equals: "Communicated to CBI" } },
     { key: "Date received for DoPT action", label: "Date received for DoPT action / latest representation", type: "date", hint: "Use the date on which the case, reply or representation came to DoPT and awaits action." },
     { key: "Remarks", label: "Remarks", type: "textarea" },
-    { key: "Case Timeline", label: "Case timeline", type: "textarea", hint: "One event per line: YYYY-MM-DD | Stage / action | optional note. These entries appear as the graphical timeline." }
+    { key: "Case Timeline", label: "Case timeline", type: "textarea", hint: "One event per line: DD/MM/YYYY | Stage / action | optional note. These entries appear as the graphical timeline." }
   ];
 }
 
@@ -549,6 +549,10 @@ const LITIGATION_DASHBOARD_BUCKETS = ["DoPT", "DoLA"];
 const ACTION_DATE_KEY = "Date received for DoPT action";
 const TIMELINE_KEY = "Case Timeline";
 const FINAL_ORDER_DATE_KEY = "Date final order issued";
+const LEGACY_STAGE_LABELS = {
+  "Representation of CO received": "Representation of CO received on Inquiry Report",
+  "Representation of CO sought": "Representation of CO sought on Inquiry Report"
+};
 const DP_TIMELINE_DATE_FIELDS = [
   { key: "Date chargesheet issued", label: "Date chargesheet issued", type: "date" },
   { key: "Date representation sought from CO", label: "Date WSD / reply sought from CO (on chargesheet)", type: "date" },
@@ -577,6 +581,37 @@ function disposalDate(cat, r) {
   if (!isCompleted(cat, r)) return "";
   return cat === "Disciplinary" ? r[FINAL_ORDER_DATE_KEY] : r["Date Communicated to CBI"];
 }
+function canonicalStage(stage) {
+  return LEGACY_STAGE_LABELS[stage] || stage || "";
+}
+function currentStageDate(cat, record) {
+  if (cat !== "Disciplinary") {
+    return record.Status === "Forwarded to DoLA" ? record["Date file sent to DoLA"]
+      : record.Status === "Received from DoLA" ? record["Date DoLA advice received"]
+      : record.Status === "Communicated to CBI" ? record["Date Communicated to CBI"]
+      : record[ACTION_DATE_KEY] || "";
+  }
+  const dates = {
+    "Case Returned to CBI for non-compliance with the Checklist": "Date of Return of Proposal",
+    "Chargesheet issued": "Date chargesheet issued",
+    "Written Statement of Defence (WSD) / reply sought from CO": "Date representation sought from CO",
+    "Written Statement of Defence (WSD) / reply received from CO": "Date representation received from CO",
+    "Names of IO and PO have been sought from CBI": "Date IO/PO names sought from CBI",
+    "IO and PO have been appointed": "Date IO/PO appointed",
+    "Inquiry in Progress": "Date inquiry commenced",
+    "Request received from CBI for change of IO": "Date of IO Change Request",
+    "Request received from CBI for change of PO": "Date of PO Change Request",
+    "Inquiry report received": "Date inquiry report received",
+    "Representation of CO sought on Inquiry Report": "Date representation sought on inquiry report",
+    "Representation of CO received on Inquiry Report": "Date representation received on inquiry report",
+    "Case sent to UPSC": "Date case sent to UPSC",
+    "UPSC's advice received": "Date UPSC advice received",
+    "Representation of CO sought on UPSC's advice": "Date representation sought on UPSC advice",
+    "Representation of CO received on UPSC's advice": "Date representation received on UPSC advice",
+    "Final Order issued with the approval of DA": FINAL_ORDER_DATE_KEY
+  };
+  return record[dates[canonicalStage(record.Stage)]] || record[ACTION_DATE_KEY] || "";
+}
 function automaticTimelineEvents(cat, record) {
   const litigation = [
     ["Date file sent to DoLA", "File sent to DoLA"],
@@ -595,8 +630,8 @@ function automaticTimelineEvents(cat, record) {
     ["Date of IO Change Request", "CBI request for change of IO"],
     ["Date of PO Change Request", "CBI request for change of PO"],
     ["Date inquiry report received", "Inquiry report received"],
-    ["Date representation sought on inquiry report", "Representation sought on inquiry report"],
-    ["Date representation received on inquiry report", "Representation received on inquiry report"],
+    ["Date representation sought on inquiry report", "Representation of CO sought on Inquiry Report"],
+    ["Date representation received on inquiry report", "Representation of CO received on Inquiry Report"],
     ["Date case sent to UPSC", "Case sent to UPSC"],
     ["Date UPSC advice received", "UPSC advice received"],
     ["Date representation sought on UPSC advice", "Representation sought on UPSC advice"],
@@ -630,11 +665,26 @@ function allPendingCases(bucket, category) {
   }));
   return cases;
 }
-function formatDDMMYYYY(d) {
-  d = d ? new Date(d) : new Date();
-  if (isNaN(d)) d = new Date();
+function formatIndianDate(value, fallback) {
+  if (value === undefined || value === null || value === "") return fallback === undefined ? "—" : fallback;
+  const text = String(value).trim();
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const indian = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (indian) return text;
+  const d = value instanceof Date ? value : new Date(value);
+  if (isNaN(d)) return text;
   const p = n => String(n).padStart(2, "0");
-  return p(d.getDate()) + "." + p(d.getMonth() + 1) + "." + d.getFullYear();
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+function toISODate(value) {
+  const text = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const indian = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return indian ? `${indian[3]}-${indian[2]}-${indian[1]}` : "";
+}
+function formatDDMMYYYY(d) {
+  return formatIndianDate(d || new Date(), "");
 }
 
 const SCHEMAS = {
@@ -667,7 +717,7 @@ const SCHEMAS = {
       { key: "Charge Memo Date", label: "Date of issue of charge memo", type: "date", showIf: { field: "Under Stay (CAT/High Court)", equals: "Yes" } },
       { key: "Status", label: "Status", type: "select", options: DISCIPLINARY_STATUSES, default: "Received and under process" },
       { key: "Remarks", label: "Remarks", type: "textarea" },
-      { key: "Case Timeline", label: "Case timeline", type: "textarea", hint: "One event per line: YYYY-MM-DD | Stage / action | optional note. These entries appear as the graphical timeline." }
+      { key: "Case Timeline", label: "Case timeline", type: "textarea", hint: "One event per line: DD/MM/YYYY | Stage / action | optional note. These entries appear as the graphical timeline." }
     ]
   }
 };
@@ -1140,14 +1190,14 @@ function renderDrilldownCaseTable(title, cases, backLabel, sortMode) {
 function registerRow(cat, r, idx, agingDate) {
   const d = daysSince(agingDate || r["Date of Receipt"]);
   const statusLabel = isCompleted(cat, r) ? "Completed" : (r.Status || SCHEMAS[cat].statusOptions[0]);
-  const actionMeta = agingDate ? " · Awaiting DoPT action since " + escapeHtml(agingDate) : "";
+  const actionMeta = agingDate ? " · Awaiting DoPT action since " + escapeHtml(formatIndianDate(agingDate)) : "";
   return `
     <div class="reg-row" data-cat="${cat}" data-id="${r.ID}">
       <div class="reg-num">${idx+1}.</div>
       <div>${agingStamp(d)}</div>
       <div>
         <div class="reg-subject">${escapeHtml(r.Subject || "(no subject)")}</div>
-        <div class="reg-meta">Received ${r["Date of Receipt"] || "—"}${cat==="Disciplinary" && r.Stage ? " · " + escapeHtml(r.Stage) : ""}${cat!=="Disciplinary" && r["RC No./Case No."] ? " · RC/Case No. " + escapeHtml(r["RC No./Case No."]) : ""}${actionMeta}</div>
+        <div class="reg-meta">Received ${formatIndianDate(r["Date of Receipt"])}${cat==="Disciplinary" && r.Stage ? " · " + escapeHtml(canonicalStage(r.Stage)) : ""}${cat!=="Disciplinary" && r["RC No./Case No."] ? " · RC/Case No. " + escapeHtml(r["RC No./Case No."]) : ""}${actionMeta}</div>
       </div>
       <div class="reg-file">${escapeHtml(r["File No"] || "—")}</div>
       <div class="reg-file">${escapeHtml(r["Computer No"] || "—")}</div>
@@ -1237,21 +1287,25 @@ function timelineEvents(cat, record) {
   automaticTimelineEvents(cat, record).forEach(event => events.push(event));
   String(record[TIMELINE_KEY] || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean).forEach(line => {
     const parts = line.split("|").map(part => part.trim());
-    const date = /^\d{4}-\d{2}-\d{2}$/.test(parts[0]) ? parts.shift() : "";
+    const date = toISODate(parts[0]);
+    if (date) parts.shift();
     if (parts[0]) events.push({ date, label: parts[0], note: parts.slice(1).join(" | ") });
   });
-  const currentLabel = cat === "Disciplinary" ? record.Stage : record.Status;
-  if (currentLabel && !events.some(event => event.label === currentLabel)) {
-    events.push({ date: disposalDate(cat, record) || record[ACTION_DATE_KEY] || "", label: currentLabel, note: "Current stage / status", current: true });
+  const currentLabel = cat === "Disciplinary" ? canonicalStage(record.Stage) : record.Status;
+  const currentEvent = currentLabel && events.find(event => event.label === currentLabel);
+  if (currentEvent) {
+    currentEvent.current = true;
+  } else if (currentLabel) {
+    events.push({ date: currentStageDate(cat, record) || disposalDate(cat, record) || record[ACTION_DATE_KEY] || "", label: currentLabel, note: "Current stage / status", current: true });
   }
   events.sort((a, b) => (a.date || "9999-12-31").localeCompare(b.date || "9999-12-31"));
-  if (events.length) events[events.length - 1].current = !isCompleted(cat, record);
+  if (!isCompleted(cat, record) && events.length && !events.some(event => event.current)) events[events.length - 1].current = true;
   return events;
 }
 function renderCaseTimeline(cat, record) {
   const events = timelineEvents(cat, record);
   if (!events.length) return "";
-  return `<section class="case-timeline"><h3 class="case-timeline-title">Case timeline</h3>${events.map(event => `<div class="timeline-event ${event.current ? "current" : ""} ${isCompleted(cat, record) && event === events[events.length - 1] ? "complete" : ""}"><div class="timeline-date">${escapeHtml(event.date || "Date not entered")}</div><div class="timeline-rail"><span class="timeline-dot"></span></div><div><div class="timeline-event-label">${escapeHtml(event.label)}</div>${event.note ? `<div class="timeline-event-note">${escapeHtml(event.note)}</div>` : ""}</div></div>`).join("")}</section>`;
+  return `<section class="case-timeline"><h3 class="case-timeline-title">Case timeline</h3>${events.map(event => `<div class="timeline-event ${event.current ? "current" : ""} ${isCompleted(cat, record) && event === events[events.length - 1] ? "complete" : ""}"><div class="timeline-date">${escapeHtml(event.date ? formatIndianDate(event.date) : "Date not entered")}</div><div class="timeline-rail"><span class="timeline-dot"></span></div><div><div class="timeline-event-label">${escapeHtml(event.label)}</div>${event.note ? `<div class="timeline-event-note">${escapeHtml(event.note)}</div>` : ""}</div></div>`).join("")}</section>`;
 }
 
 function openCaseDetail(cat, record) {
@@ -1262,7 +1316,7 @@ function openCaseDetail(cat, record) {
   document.getElementById("drawerSub").textContent = schema.label;
   document.getElementById("entryForm").innerHTML = `
     ${renderCaseTimeline(cat, record)}
-    <dl class="case-detail-grid">${fields.map(f => `<dt>${escapeHtml(f.label)}</dt><dd>${escapeHtml(record[f.key] || "—")}</dd>`).join("")}</dl>
+    <dl class="case-detail-grid">${fields.map(f => `<dt>${escapeHtml(f.label)}</dt><dd>${escapeHtml(f.key === "Stage" ? canonicalStage(record[f.key]) : (f.type === "date" ? formatIndianDate(record[f.key]) : (record[f.key] || "—")))}</dd>`).join("")}</dl>
     <div class="drawer-actions"><button type="button" class="btn ghost" id="detailCloseBtn">Close</button><button type="button" class="btn" id="detailEditBtn">Edit case</button></div>`;
   document.getElementById("detailCloseBtn").onclick = closeDrawer;
   document.getElementById("detailEditBtn").onclick = () => openDrawer(cat, record, "full");
@@ -1296,7 +1350,7 @@ function openDrawer(cat, record, mode) {
   const form = document.getElementById("entryForm");
 
   form.innerHTML = fields.map(f => {
-    const val = record ? (record[f.key] ?? "") : (f.default || "");
+    const val = record ? (f.key === "Stage" ? canonicalStage(record[f.key]) : (record[f.key] ?? "")) : (f.default || "");
     let inputHtml;
     if (f.type === "select") {
       const options = val && !f.options.includes(val) ? [val, ...f.options] : f.options;
@@ -1306,7 +1360,8 @@ function openDrawer(cat, record, mode) {
     } else {
       inputHtml = `<input type="${f.type}" name="${f.key}" value="${escapeHtml(val)}" ${f.required?'required':''}>`;
     }
-    return `<div class="field" data-fieldkey="${f.key}"><label>${f.label}</label>${inputHtml}${f.hint ? `<div class="hint">${f.hint}</div>` : ""}</div>`;
+    const dateHint = f.type === "date" ? "Enter / select date in DD/MM/YYYY format." : "";
+    return `<div class="field" data-fieldkey="${f.key}"><label>${f.label}</label>${inputHtml}${f.hint ? `<div class="hint">${f.hint}</div>` : ""}${dateHint ? `<div class="hint">${dateHint}</div>` : ""}</div>`;
   }).join("") + `
     <div class="drawer-actions">
       <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
@@ -1499,8 +1554,8 @@ function buildDisciplinaryBody(rows) {
     list.forEach((r, i) => {
       const nameDesig = r["Name & Designation of Delinquent"] ? escapeHtml(r["Name & Designation of Delinquent"]) + "<br>" : "";
       const charge = r.Subject ? `Brief charge: ${escapeHtml(r.Subject)}` : "";
-      const present = escapeHtml(r["Present Status"] || r.Stage || "—");
-      html += `<tr><td>${i+1}</td><td>${nameDesig}${charge}</td><td>${present}</td>${showMemoDate ? `<td>${escapeHtml(r["Charge Memo Date"]||"—")}</td>` : ""}<td>${escapeHtml(r.Remarks||"—")}</td></tr>`;
+      const present = escapeHtml(r["Present Status"] || canonicalStage(r.Stage) || "—");
+      html += `<tr><td>${i+1}</td><td>${nameDesig}${charge}</td><td>${present}</td>${showMemoDate ? `<td>${escapeHtml(formatIndianDate(r["Charge Memo Date"]))}</td>` : ""}<td>${escapeHtml(r.Remarks||"—")}</td></tr>`;
     });
     html += `</tbody></table>`;
   });
@@ -1510,7 +1565,7 @@ function buildDisciplinaryBody(rows) {
 function buildReport(type, from, to) {
   const cats = type === "complete" ? CATS : [type];
   const title = type === "complete" ? "Complete Report — All Categories" : (type === "Disciplinary" ? "Present Status of Matters Dealt in AVD-II (B)" : "Report for " + SCHEMAS[type].label);
-  const rangeText = (from || to) ? ` &middot; ${from || "start"} to ${to || "today"}` : ` &middot; as on ${formatDDMMYYYY()}`;
+  const rangeText = (from || to) ? ` &middot; ${from ? formatIndianDate(from) : "start"} to ${to ? formatIndianDate(to) : "today"}` : ` &middot; as on ${formatDDMMYYYY()}`;
 
   let summary = "";
   if (type !== "Disciplinary") {
@@ -1536,7 +1591,7 @@ function buildReport(type, from, to) {
     const cols = schema.fields.map(f => f.key);
     body += `<table class="report-table"><thead><tr><th>#</th>${cols.map(k=>`<th>${k}</th>`).join("")}</tr></thead><tbody>`;
     rows.forEach((r,i) => {
-      body += `<tr><td>${i+1}</td>${cols.map(k => `<td>${escapeHtml(r[k]||"—")}</td>`).join("")}</tr>`;
+      body += `<tr><td>${i+1}</td>${cols.map(k => { const field = schema.fields.find(f => f.key === k); const value = field && field.type === "date" ? formatIndianDate(r[k]) : (r[k] || "—"); return `<td>${escapeHtml(value)}</td>`; }).join("")}</tr>`;
     });
     body += `</tbody></table>`;
   });
