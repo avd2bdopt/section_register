@@ -33,34 +33,8 @@
   body{background:radial-gradient(circle at 85% 0%, #E8EEF5 0, transparent 30rem),var(--paper);}
   a{color:inherit;}
 
-  /* ---------- Login ---------- */
-  #loginScreen{
-    min-height:100vh;display:flex;align-items:center;justify-content:center;
-    background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='1' cy='1' r='1' fill='%23334268'/%3E%3C/svg%3E");
-    padding:20px;
-  }
-  .login-card{
-    background:var(--paper-raised);border-radius:14px;padding:36px 34px;width:100%;max-width:360px;
-    box-shadow:0 20px 60px rgba(0,0,0,.35);
-  }
-  .login-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate-light);}
-  .login-title{font-family:var(--serif);font-size:24px;font-weight:600;color:var(--ink);margin:6px 0 2px;}
-  .login-sub{font-size:12.5px;color:var(--slate-light);margin-bottom:22px;}
-  .login-card .field{margin-bottom:14px;}
-  .login-card label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
-  .login-card input{
-    width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:7px;
-    font-family:var(--sans);font-size:14px;background:#fff;
-  }
-  .login-error{
-    display:none;background:var(--rust-soft);color:var(--rust);font-size:12.5px;padding:9px 11px;
-    border-radius:7px;margin-bottom:14px;
-  }
-  .login-card .btn{width:100%;padding:11px;font-size:14px;}
-
   /* ---------- Layout ---------- */
-  .app{display:none;min-height:100vh;}
-  .app.open{display:flex;}
+  .app{display:flex;min-height:100vh;}
   .sidebar{
     width:250px;flex-shrink:0;background:linear-gradient(180deg,#16233E 0%,var(--ink) 62%,#13213B 100%);color:#EDE9DD;
     padding:28px 20px;position:sticky;top:0;height:100vh;overflow-y:auto;
@@ -317,26 +291,6 @@
 </head>
 <body>
 
-<div id="loginScreen">
-  <div class="login-card">
-    <div class="login-eyebrow">Department of Personnel &amp; Training</div>
-    <div class="login-title">AVD-II (B)</div>
-    <div class="login-sub">Sign in to the section case register.</div>
-    <div class="login-error" id="loginError">Incorrect username or password.</div>
-    <form id="loginForm">
-      <div class="field">
-        <label>Username</label>
-        <input type="text" id="loginUser" autocomplete="username" required>
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input type="password" id="loginPass" autocomplete="current-password" required>
-      </div>
-      <button class="btn" type="submit">Sign in</button>
-    </form>
-  </div>
-</div>
-
 <div class="app" id="appRoot">
   <aside class="sidebar">
     <div class="brand">
@@ -348,7 +302,6 @@
     <div class="sidebar-foot">
       <div><span class="api-dot" id="apiDot"></span><span id="apiStatusText">Checking connection…</span></div>
       <div style="margin-top:6px;">Data source: Google Sheets</div>
-      <button class="logout-btn" id="logoutBtn">Sign out</button>
     </div>
   </aside>
 
@@ -388,46 +341,6 @@
 <div id="printArea" style="display:none;"></div>
 
 <script>
-/* =====================================================================
-   LOGIN — fixed credentials as requested.
-   IMPORTANT: this is a screen gate only, not real security. The
-   username/password below live in this HTML file, so anyone who opens
-   "View Page Source" on the live site can read them directly — a login
-   screen implemented this way cannot be bypass-proof. Treat it as a
-   deterrent against casual access, not as protection for sensitive
-   data. Real protection has to come from (a) not sharing the dashboard
-   link outside the section, and (b) keeping the Google Sheet's own
-   sharing settings restricted, since that's where the actual case data
-   lives.
-   ===================================================================== */
-const CREDS = { username: "avd2admin", password: "Vigilance@123" };
-
-const loginScreen = document.getElementById("loginScreen");
-const appRoot = document.getElementById("appRoot");
-
-function showApp() {
-  loginScreen.style.display = "none";
-  appRoot.classList.add("open");
-  boot();
-}
-document.getElementById("loginForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const u = document.getElementById("loginUser").value.trim();
-  const p = document.getElementById("loginPass").value;
-  const err = document.getElementById("loginError");
-  if (u === CREDS.username && p === CREDS.password) {
-    sessionStorage.setItem("avd2_auth", "1");
-    err.style.display = "none";
-    showApp();
-  } else {
-    err.style.display = "block";
-  }
-});
-document.getElementById("logoutBtn").addEventListener("click", () => {
-  sessionStorage.removeItem("avd2_auth");
-  location.reload();
-});
-
 /* =====================================================================
    CONFIG — paste your Apps Script Web App /exec URL here once deployed.
    Until you do, the dashboard runs in local demo mode (data is stored
@@ -1649,7 +1562,7 @@ function buildReport(type, from, to) {
 /* ---------------------------------------------------------------------
    Startup
    --------------------------------------------------------------------- */
-if (sessionStorage.getItem("avd2_auth") === "1") showApp();
+boot();
 </script>
 </body>
 </html>
