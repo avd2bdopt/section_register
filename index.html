@@ -254,8 +254,8 @@
   }
   .field select:disabled, .field input:disabled{background:#EFEAD9;color:var(--slate-light);cursor:not-allowed;}
   .field textarea{resize:vertical;min-height:60px;}
-  .drawer-actions{display:flex;gap:10px;margin-top:22px;}
-  .drawer-actions .btn{flex:1;}
+  .drawer-actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
+  .drawer-actions .btn{flex:1;min-width:120px;}
   .close-x{position:absolute;top:24px;right:26px;background:none;border:none;cursor:pointer;color:var(--slate-light);display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;transition:background .15s ease,color .15s ease;}
   .close-x:hover{color:var(--ink);background:#EFEAD9;}
 
@@ -292,8 +292,8 @@
 
   @media print{
     body *{visibility:hidden;}
-    #reportOutput, #reportOutput *{visibility:visible;}
-    #reportOutput{position:absolute;left:0;top:0;width:100%;border:none;display:block !important;padding:0;}
+    #reportOutput, #reportOutput *, #printArea, #printArea *{visibility:visible;}
+    #reportOutput, #printArea{position:absolute;left:0;top:0;width:100%;border:none;display:block !important;padding:0;}
   }
 
   @media (max-width: 880px){
@@ -378,6 +378,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div id="printArea" style="display:none;"></div>
 
 <script>
 /* =====================================================================
@@ -1308,6 +1309,27 @@ function renderCaseTimeline(cat, record) {
   return `<section class="case-timeline"><h3 class="case-timeline-title">Case timeline</h3>${events.map(event => `<div class="timeline-event ${event.current ? "current" : ""} ${isCompleted(cat, record) && event === events[events.length - 1] ? "complete" : ""}"><div class="timeline-date">${escapeHtml(event.date ? formatIndianDate(event.date) : "Date not entered")}</div><div class="timeline-rail"><span class="timeline-dot"></span></div><div><div class="timeline-event-label">${escapeHtml(event.label)}</div>${event.note ? `<div class="timeline-event-note">${escapeHtml(event.note)}</div>` : ""}</div></div>`).join("")}</section>`;
 }
 
+function printCaseSummary(cat, record) {
+  const schema = SCHEMAS[cat];
+  const fields = schema.fields.filter(f => f.key !== "ID" && f.key !== TIMELINE_KEY);
+  const idBits = [];
+  if (record["File No"]) idBits.push("File No. " + record["File No"]);
+  if (record["Computer No"]) idBits.push("Computer No. " + record["Computer No"]);
+  const subtitle = idBits.join(" · ");
+  const gridHtml = `<dl class="case-detail-grid">${fields.map(f => `<dt>${escapeHtml(f.label)}</dt><dd>${escapeHtml(f.key === "Stage" ? canonicalStage(record[f.key]) : (f.type === "date" ? formatIndianDate(record[f.key]) : (record[f.key] || "—")))}</dd>`).join("")}</dl>`;
+  document.getElementById("printArea").innerHTML = `
+    <div class="report-header">
+      <div class="report-org">Department of Personnel &amp; Training</div>
+      <div class="report-section">AVD-II (B)</div>
+      <div class="report-h1">Case Summary — ${escapeHtml(schema.label)}</div>
+      <div class="report-sub">${subtitle ? escapeHtml(subtitle) + " &middot; " : ""}Printed on ${new Date().toLocaleString('en-IN')}</div>
+    </div>
+    ${renderCaseTimeline(cat, record)}
+    ${gridHtml}
+  `;
+  window.print();
+}
+
 function openCaseDetail(cat, record) {
   if (!record) return;
   const schema = SCHEMAS[cat];
@@ -1317,8 +1339,9 @@ function openCaseDetail(cat, record) {
   document.getElementById("entryForm").innerHTML = `
     ${renderCaseTimeline(cat, record)}
     <dl class="case-detail-grid">${fields.map(f => `<dt>${escapeHtml(f.label)}</dt><dd>${escapeHtml(f.key === "Stage" ? canonicalStage(record[f.key]) : (f.type === "date" ? formatIndianDate(record[f.key]) : (record[f.key] || "—")))}</dd>`).join("")}</dl>
-    <div class="drawer-actions"><button type="button" class="btn ghost" id="detailCloseBtn">Close</button><button type="button" class="btn" id="detailEditBtn">Edit case</button></div>`;
+    <div class="drawer-actions"><button type="button" class="btn ghost" id="detailCloseBtn">Close</button><button type="button" class="btn ghost" id="detailPrintBtn">Print case summary</button><button type="button" class="btn" id="detailEditBtn">Edit case</button></div>`;
   document.getElementById("detailCloseBtn").onclick = closeDrawer;
+  document.getElementById("detailPrintBtn").onclick = () => printCaseSummary(cat, record);
   document.getElementById("detailEditBtn").onclick = () => openDrawer(cat, record, "full");
   document.getElementById("overlay").classList.add("open");
 }
@@ -1570,7 +1593,7 @@ function buildReport(type, from, to) {
   let summary = "";
   if (type !== "Disciplinary") {
     summary = `<div class="report-summary">` + cats.map(c => {
-      const rows = (DATA[c]||[]).filter(r => inRange(r["Date of Receipt"], from, to));
+      const rows = c === "Disciplinary" ? (DATA[c]||[]) : (DATA[c]||[]).filter(r => inRange(r["Date of Receipt"], from, to));
       return `<div><b>${rows.length}</b>${SCHEMAS[c].label}</div>`;
     }).join("") + `</div>`;
   }
@@ -1578,7 +1601,11 @@ function buildReport(type, from, to) {
   let body = "";
   cats.forEach(c => {
     const schema = SCHEMAS[c];
-    const rows = (DATA[c]||[]).filter(r => inRange(r["Date of Receipt"], from, to))
+    // The Disciplinary "Present Status" report is a snapshot of everything
+    // currently pending, not a receipt-date-windowed list — an old stayed
+    // or long-running case must always appear regardless of the date
+    // filter, so Date of Receipt filtering is skipped for this category.
+    const rows = (c === "Disciplinary" ? (DATA[c]||[]).slice() : (DATA[c]||[]).filter(r => inRange(r["Date of Receipt"], from, to)))
       .sort((a,b) => new Date(a["Date of Receipt"]) - new Date(b["Date of Receipt"]));
 
     if (c === "Disciplinary") {
