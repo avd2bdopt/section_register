@@ -278,10 +278,16 @@
   .report-summary div{font-size:12px;}
   .report-summary b{font-family:var(--serif);font-size:18px;display:block;color:var(--ink);}
   .report-cat-title{font-family:var(--serif);font-size:16px;color:var(--ink);margin:22px 0 8px;border-bottom:1px solid var(--border);padding-bottom:6px;}
-  table.report-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px;}
-  table.report-table th, table.report-table td{border:1px solid #C7BEA6;padding:5px 7px;text-align:left;vertical-align:top;}
-  table.report-table th{background:#EFEAD9;font-size:10px;text-transform:uppercase;letter-spacing:.03em;}
-  .report-empty{font-size:12px;color:var(--slate-light);font-style:italic;margin-bottom:10px;}
+  table.report-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;}
+  table.report-table th, table.report-table td{border:1px solid #C7BEA6;padding:7px 9px;text-align:left;vertical-align:top;}
+  table.report-table th{background:#EFEAD9;font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
+  table.report-summary-table{width:auto;min-width:320px;border-collapse:collapse;font-size:14px;margin:14px 0 22px;}
+  table.report-summary-table th, table.report-summary-table td{border:1px solid #C7BEA6;padding:7px 14px;text-align:left;}
+  table.report-summary-table th{background:#EFEAD9;font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
+  table.report-summary-table td:last-child{text-align:right;font-family:var(--mono);}
+  table.report-summary-table tr.total-row td{font-weight:700;background:#F7F3E8;}
+  .report-empty{font-size:13px;color:var(--slate-light);font-style:italic;margin-bottom:10px;}
+  .dp-bucket-section + .dp-bucket-section{page-break-before:always;}
 
   /* ---------- Toast ---------- */
   .toast{
@@ -291,9 +297,10 @@
   .toast.show{opacity:1;}
 
   @media print{
+    @page{size:landscape;margin:14mm;}
     body *{visibility:hidden;}
     #reportOutput, #reportOutput *, #printArea, #printArea *{visibility:visible;}
-    #reportOutput, #printArea{position:absolute;left:0;top:0;width:100%;border:none;display:block !important;padding:0;}
+    #reportOutput, #printArea{position:absolute;left:0;top:0;width:100%;border:none;display:block !important;padding:0;font-size:13px;}
   }
 
   @media (max-width: 880px){
@@ -1563,24 +1570,28 @@ function buildDisciplinaryBody(rows) {
   const total = BUCKET_ORDER.reduce((s, b) => s + buckets[b].length, 0);
 
   let html = `<div class="report-cat-title">Disciplinary Proceedings — Present Status</div>`;
-  html += `<div class="report-summary">`;
-  BUCKET_ORDER.forEach(b => { html += `<div><b>${buckets[b].length}</b>${BUCKET_LABELS[b]}</div>`; });
-  html += `<div><b>${total}</b>Total Disciplinary Cases</div>`;
-  html += `</div>`;
+  html += `<table class="report-summary-table"><thead><tr><th>Pending With</th><th>Number</th></tr></thead><tbody>`;
+  BUCKET_ORDER.forEach(b => { html += `<tr><td>${BUCKET_LABELS[b]}</td><td>${String(buckets[b].length).padStart(2, "0")}</td></tr>`; });
+  html += `<tr class="total-row"><td>Total Disciplinary Cases</td><td>${String(total).padStart(2, "0")}</td></tr>`;
+  html += `</tbody></table>`;
 
   BUCKET_ORDER.forEach(b => {
     const list = buckets[b];
+    html += `<div class="dp-bucket-section">`;
     html += `<div class="report-cat-title" style="font-size:14px;">${BUCKET_LABELS[b]} (${list.length})</div>`;
-    if (!list.length) { html += `<div class="report-empty">NIL</div>`; return; }
+    if (!list.length) {
+      html += `<div class="report-empty">NIL</div></div>`;
+      return;
+    }
     const showMemoDate = b === "Stayed";
     html += `<table class="report-table"><thead><tr><th>Sr.</th><th>Name, Designation &amp; Brief Charge</th><th>Present Status</th>${showMemoDate ? "<th>Charge Memo Date</th>" : ""}<th>Remarks</th></tr></thead><tbody>`;
     list.forEach((r, i) => {
-      const nameDesig = r["Name & Designation of Delinquent"] ? escapeHtml(r["Name & Designation of Delinquent"]) + "<br>" : "";
+      const nameDesig = r["Name & Designation of Delinquent"] ? `<strong>${escapeHtml(r["Name & Designation of Delinquent"])}</strong><br>` : "";
       const charge = r.Subject ? `Brief charge: ${escapeHtml(r.Subject)}` : "";
       const present = escapeHtml(r["Present Status"] || canonicalStage(r.Stage) || "—");
       html += `<tr><td>${i+1}</td><td>${nameDesig}${charge}</td><td>${present}</td>${showMemoDate ? `<td>${escapeHtml(formatIndianDate(r["Charge Memo Date"]))}</td>` : ""}<td>${escapeHtml(r.Remarks||"—")}</td></tr>`;
     });
-    html += `</tbody></table>`;
+    html += `</tbody></table></div>`;
   });
   return html;
 }
