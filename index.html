@@ -497,6 +497,7 @@ const DP_TIMELINE_DATE_FIELDS = [
 function isCompleted(cat, r) {
   if (COMPLETED_LITIGATION_CATEGORIES.includes(cat)) return r.Status === "Communicated to CBI";
   if (cat === "Disciplinary") return r.Stage === "Final Order issued with the approval of DA";
+  if (cat === "Suspension") return r.Status === "Revoked" || r.Status === "Reinstated";
   return r.Status === "Completed";
 }
 function disposalDate(cat, r) {
@@ -507,6 +508,7 @@ function canonicalStage(stage) {
   return LEGACY_STAGE_LABELS[stage] || stage || "";
 }
 function currentStageDate(cat, record) {
+  if (cat === "Suspension") return record["Suspension Valid Upto"] || record["Effective Date of Suspension"] || "";
   if (cat !== "Disciplinary") {
     return record.Status === "Forwarded to DoLA" ? record["Date file sent to DoLA"]
       : record.Status === "Received from DoLA" ? record["Date DoLA advice received"]
@@ -641,10 +643,31 @@ const SCHEMAS = {
       { key: "Remarks", label: "Remarks", type: "textarea" },
       { key: "Case Timeline", label: "Case timeline", type: "textarea", hint: "One event per line: DD/MM/YYYY | Stage / action | optional note. These entries appear as the graphical timeline." }
     ]
+  },
+  Suspension: {
+    label: "Suspension Cases",
+    desc: "Officers under suspension — CBI's proposal, the order, and Rule 10(6) review deadlines.",
+    statusOptions: ["Under Suspension", "Revoked", "Reinstated"],
+    statusQuickFields: ["Status", "Suspension Valid Upto", "Last CBI Recommendation Received On", "Present Status"],
+    fields: [
+      { key: "Date of Receipt", label: "Date of receipt (CBI's proposal)", type: "date", required: true },
+      { key: "Name & Designation of Officer", label: "Name & designation of officer", type: "text" },
+      { key: "File No", label: "File no.", type: "text" },
+      { key: "Computer No", label: "Computer no.", type: "text" },
+      { key: "Subject", label: "Grounds for suspension", type: "textarea", required: true },
+      { key: "Effective Date of Suspension", label: "Effective date of suspension", type: "date", hint: "Anchor date for Rule 10(6) — first review is due within 90 days of this date." },
+      { key: "Suspension Order Issued On", label: "Suspension order issued on", type: "date" },
+      { key: "Last CBI Recommendation Received On", label: "Last CBI review recommendation received on", type: "date" },
+      { key: "Suspension Valid Upto", label: "Suspension valid upto (current review deadline)", type: "date", hint: "Update this every time a review extends the suspension — first review within 90 days of the effective date, each further extension up to 180 days at a time (Rule 10(6), CCS (CCA) Rules, 1965)." },
+      { key: "Status", label: "Status", type: "select", options: ["Under Suspension", "Revoked", "Reinstated"], default: "Under Suspension" },
+      { key: "Present Status", label: "Present status (narrative)", type: "textarea" },
+      { key: "Remarks", label: "Remarks", type: "textarea" },
+      { key: "Case Timeline", label: "Case timeline", type: "textarea", hint: "One event per line: DD/MM/YYYY | Event | optional note. Log each review/extension here — e.g. '25/11/2024 | 1st review — extended | Valid upto 30/05/2025 (180 days), CBI recommendation dated 20/11/2024'." }
+    ]
   }
 };
 const CATS = Object.keys(SCHEMAS);
-const CAT_COLORS = { SLP: "#1C2B4A", Appeals: "#4A6B54", Withdrawal: "#93691E", Disciplinary: "#8C3B2E" };
+const CAT_COLORS = { SLP: "#1C2B4A", Appeals: "#4A6B54", Withdrawal: "#93691E", Disciplinary: "#8C3B2E", Suspension: "#6B4C93" };
 const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
@@ -819,9 +842,9 @@ function agingStamp(days) {
   return `<span class="reg-stamp ${cls}">${txt}</span>`;
 }
 function statusClass(s) {
-  if (s === "Completed") return "status-completed";
+  if (s === "Completed" || s === "Revoked" || s === "Reinstated") return "status-completed";
   if (s === "Returned") return "status-returned";
-  if (!s || s === "Received and under process") return "status-pending";
+  if (!s || s === "Received and under process" || s === "Under Suspension") return "status-pending";
   return "status-forwarded";
 }
 function statusBucket(s) {
@@ -1024,6 +1047,19 @@ function renderOverviewCharts() {
 function renderCategoryCards(cat) {
   const cards = document.getElementById("cards");
   const rows = DATA[cat] || [];
+  if (cat === "Suspension") {
+    const active = rows.filter(r => !isCompleted(cat, r));
+    const overdue = active.filter(r => { const d = daysSince(r["Suspension Valid Upto"]); return d !== null && d > 0; });
+    const dueSoon = active.filter(r => { const d = daysSince(r["Suspension Valid Upto"]); return d !== null && d <= 0 && d >= -15; });
+    const resolved = rows.filter(r => isCompleted(cat, r));
+    cards.innerHTML = `
+      <div class="card"><div class="card-label">Total</div><div class="card-value">${rows.length}</div></div>
+      <div class="card"><div class="card-label">Under suspension</div><div class="card-value">${active.length}</div></div>
+      <div class="card"><div class="card-label">Review overdue</div><div class="card-value ${overdue.length?'alert':''}">${overdue.length}</div><div class="card-hint">Order may lapse — Rule 10(6)</div></div>
+      <div class="card"><div class="card-label">Review due &le;15 days</div><div class="card-value">${dueSoon.length}</div></div>
+    `;
+    return;
+  }
   const pending = rows.filter(r => !isCompleted(cat, r)).length;
   const noAction = noActionSinceCases(cat).length;
   const completed = rows.filter(r => isCompleted(cat, r)).length;
@@ -1146,13 +1182,15 @@ function registerRow(cat, r, idx, agingDate) {
   const d = daysSince(agingDate || r["Date of Receipt"]);
   const statusLabel = isCompleted(cat, r) ? "Completed" : (r.Status || SCHEMAS[cat].statusOptions[0]);
   const actionMeta = agingDate ? " · Awaiting DoPT action since " + escapeHtml(formatIndianDate(agingDate)) : "";
+  const stampHtml = cat === "Suspension" ? dueDateStamp(r["Suspension Valid Upto"], isCompleted(cat, r)) : agingStamp(d);
+  const suspensionMeta = cat === "Suspension" && r["Suspension Valid Upto"] ? " · Review due by " + escapeHtml(formatIndianDate(r["Suspension Valid Upto"])) : "";
   return `
     <div class="reg-row" data-cat="${cat}" data-id="${r.ID}">
       <div class="reg-num">${idx+1}.</div>
-      <div>${agingStamp(d)}</div>
+      <div>${stampHtml}</div>
       <div>
         <div class="reg-subject">${escapeHtml(r.Subject || "(no subject)")}</div>
-        <div class="reg-meta">Received ${formatIndianDate(r["Date of Receipt"])}${cat==="Disciplinary" && r.Stage ? " · " + escapeHtml(canonicalStage(r.Stage)) : ""}${cat!=="Disciplinary" && r["RC No./Case No."] ? " · RC/Case No. " + escapeHtml(r["RC No./Case No."]) : ""}${actionMeta}</div>
+        <div class="reg-meta">Received ${formatIndianDate(r["Date of Receipt"])}${cat==="Disciplinary" && r.Stage ? " · " + escapeHtml(canonicalStage(r.Stage)) : ""}${cat!=="Disciplinary" && cat!=="Suspension" && r["RC No./Case No."] ? " · RC/Case No. " + escapeHtml(r["RC No./Case No."]) : ""}${actionMeta}${suspensionMeta}</div>
       </div>
       <div class="reg-file">${escapeHtml(r["File No"] || "—")}</div>
       <div class="reg-file">${escapeHtml(r["Computer No"] || "—")}</div>
@@ -1177,7 +1215,7 @@ function renderRegister(cat) {
     return `<div class="register"><div class="empty"><strong>No entries yet</strong>Click "New entry" to log the first case in this register.</div></div>`;
   }
   return `<div class="register">
-    <div class="reg-row head"><div></div><div>Aging</div><div>Subject</div><div>File No.</div><div>Computer No.</div><div>Status</div><div></div></div>
+    <div class="reg-row head"><div></div><div>${cat === "Suspension" ? "Review" : "Aging"}</div><div>Subject</div><div>File No.</div><div>Computer No.</div><div>Status</div><div></div></div>
     ${rows.map((r,i) => registerRow(cat, r, i)).join("")}
   </div>`;
 }
@@ -1631,6 +1669,7 @@ function renderReportsPage() {
           <option value="Appeals">Report for Appeals</option>
           <option value="Withdrawal">Report for Withdrawal from Prosecution</option>
           <option value="Disciplinary">Report for Disciplinary Proceedings</option>
+          <option value="Suspension">Report for Suspension Cases</option>
           <option value="complete">Complete Report (all categories)</option>
         </select>
       </div>
