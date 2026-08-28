@@ -25,190 +25,256 @@
   :root{
     --ink:#1C2B4A;
     --ink-soft:#334268;
-    --paper:#F5F2EA;
-    --paper-raised:#FBFAF6;
+    --ink-softer:#4A5A82;
+    --paper:#F3F1EA;
+    --paper-raised:#FFFFFF;
     --rust:#8C3B2E;
-    --rust-soft:#F4E4DF;
-    --sage:#4A6B54;
-    --sage-soft:#E4EBE3;
+    --rust-soft:#F7E7E2;
+    --sage:#3F7A57;
+    --sage-soft:#E3EFE6;
     --amber:#93691E;
-    --amber-soft:#F3E9D2;
+    --amber-soft:#F6EDD6;
     --blue:#2E5A8C;
-    --blue-soft:#E1EAF4;
-    --slate:#3A3F4B;
-    --slate-light:#767C8C;
-    --border:#DCD5C4;
-    --border-strong:#C7BEA6;
+    --blue-soft:#E4EDF7;
+    --slate:#333A4A;
+    --slate-light:#767E92;
+    --border:#E1DDD0;
+    --border-strong:#CFC7B4;
     --serif: 'Source Serif 4', Georgia, serif;
     --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --radius-sm:8px;
+    --radius-md:12px;
+    --radius-lg:14px;
+    --shadow-sm:0 1px 2px rgba(20,30,55,.06);
+    --shadow-md:0 4px 16px rgba(20,30,55,.07);
+    --shadow-lg:0 14px 40px rgba(20,30,55,.11);
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--slate);}
-  body{background:radial-gradient(circle at 85% 0%, #E8EEF5 0, transparent 30rem),var(--paper);}
+  body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--slate);-webkit-font-smoothing:antialiased;}
+  body{background:radial-gradient(circle at 88% -4%, #E9EFF7 0, transparent 34rem),var(--paper);}
   @supports (padding: max(0px)){
-    .sidebar{padding-top:max(28px, env(safe-area-inset-top));padding-left:max(20px, env(safe-area-inset-left));}
-    .main{padding-top:max(32px, env(safe-area-inset-top));padding-bottom:max(80px, env(safe-area-inset-bottom));}
+    .sidebar{padding-top:max(26px, env(safe-area-inset-top));padding-left:max(18px, env(safe-area-inset-left));}
+    .main{padding-top:max(30px, env(safe-area-inset-top));padding-bottom:max(80px, env(safe-area-inset-bottom));}
   }
   a{color:inherit;}
+  ::selection{background:#CBDCEF;}
 
   /* ---------- Layout ---------- */
   .app{display:flex;min-height:100vh;}
   .sidebar{
-    width:250px;flex-shrink:0;background:linear-gradient(180deg,#16233E 0%,var(--ink) 62%,#13213B 100%);color:#EDE9DD;
-    padding:28px 20px;position:sticky;top:0;height:100vh;overflow-y:auto;
+    width:256px;flex-shrink:0;background:linear-gradient(175deg,#152140 0%,var(--ink) 55%,#101B33 100%);color:#EDE9DD;
+    padding:26px 18px;position:sticky;top:0;height:100vh;overflow-y:auto;
+    display:flex;flex-direction:column;
   }
-  .brand{margin-bottom:6px;}
-  .brand-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#B9C2DA;}
-  .brand-title{font-family:var(--serif);font-size:22px;line-height:1.25;margin:6px 0 2px;font-weight:600;}
-  .brand-sub{font-size:12px;color:#9AA5C2;margin-bottom:28px;}
+  .sidebar::-webkit-scrollbar{width:6px;}
+  .sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:6px;}
+  .brand{margin-bottom:8px;display:flex;align-items:flex-start;gap:11px;}
+  .brand-mark{
+    width:38px;height:38px;flex-shrink:0;border-radius:10px;background:linear-gradient(145deg,#2A3E66,#18274A);
+    display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:15px;
+    color:#EDE9DD;border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .brand-text{min-width:0;}
+  .brand-eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#93A0C2;line-height:1.4;}
+  .brand-title{font-family:var(--serif);font-size:19px;line-height:1.25;margin:3px 0 1px;font-weight:600;color:#F5F2EA;}
+  .brand-sub{font-size:11.5px;color:#8B96B6;margin-bottom:26px;}
 
-  .nav{list-style:none;padding:0;margin:0;}
-  .nav li + li{margin-top:4px;}
-  .nav li.sep{border-top:1px solid rgba(255,255,255,.12);margin:14px 0 10px;padding-top:4px;}
+  .nav{list-style:none;padding:0;margin:0;flex:1;}
+  .nav li + li{margin-top:2px;}
+  .nav li.sep{border-top:1px solid rgba(255,255,255,.10);margin:16px 4px 12px;padding-top:2px;}
   .nav button{
-    width:100%;text-align:left;background:none;border:none;border-left:3px solid transparent;color:#D9DEEE;
-    padding:10px 12px 10px 9px;border-radius:6px;font-family:var(--sans);font-size:14px;
-    cursor:pointer;display:flex;align-items:center;gap:9px;
-    transition:background .15s ease, border-color .15s ease;
+    width:100%;text-align:left;background:none;border:none;color:#C6CDE2;
+    padding:9px 11px;border-radius:8px;font-family:var(--sans);font-size:13.5px;
+    cursor:pointer;display:flex;align-items:center;gap:10px;
+    transition:background .15s ease, color .15s ease;position:relative;
   }
-  .nav button:hover{background:rgba(255,255,255,.07);}
-  .nav button.active{background:#EDE9DD;color:var(--ink);font-weight:600;border-left-color:var(--rust);}
+  .nav button:hover{background:rgba(255,255,255,.06);color:#F0EEE4;}
+  .nav button.active{background:rgba(237,233,221,.12);color:#F7F5EC;font-weight:600;}
+  .nav button.active::before{content:"";position:absolute;left:-18px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--rust);}
+  .nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.85;display:flex;align-items:center;justify-content:center;}
+  .nav-icon svg{width:16px;height:16px;}
+  .nav button.active .nav-icon{opacity:1;}
   .nav-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
   .nav-label{flex:1;}
-  .nav .count{font-family:var(--mono);font-size:11px;opacity:.75;margin-left:auto;}
-  .nav button.active .count{opacity:.6;}
+  .nav .count{font-family:var(--mono);font-size:10.5px;opacity:.7;margin-left:auto;background:rgba(255,255,255,.08);padding:1px 6px;border-radius:20px;}
+  .nav button.active .count{opacity:.85;background:rgba(28,43,74,.12);color:var(--ink);}
 
-  .sidebar-foot{margin-top:32px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:#8B96B6;line-height:1.6;}
-  .api-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--amber);}
-  .api-dot.live{background:#6FA37B;}
-  .logout-btn{background:none;border:none;color:#B9C2DA;font-size:11px;cursor:pointer;text-decoration:underline;padding:0;margin-top:8px;}
+  .sidebar-foot{margin-top:20px;padding-top:14px;border-top:1px solid rgba(255,255,255,.10);font-size:11px;color:#8B96B6;line-height:1.6;}
+  .api-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--amber);box-shadow:0 0 0 3px rgba(147,105,30,.18);}
+  .api-dot.live{background:#5FAE7C;box-shadow:0 0 0 3px rgba(95,174,124,.18);}
+  .logout-btn{background:none;border:none;color:#93A0C2;font-size:11px;cursor:pointer;text-decoration:underline;padding:0;margin-top:8px;}
 
-  .main{flex:1;padding:32px 40px 80px;max-width:1180px;}
-  .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
-  .page-title{font-family:var(--serif);font-size:28px;font-weight:600;color:var(--ink);margin:0;}
+  .main{flex:1;padding:30px 38px 80px;max-width:1220px;}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+  .page-title{font-family:var(--serif);font-size:26px;font-weight:600;color:var(--ink);margin:0;letter-spacing:-.01em;}
   .page-desc{color:var(--slate-light);font-size:13px;margin-top:4px;}
+
+  /* ---------- Overview greeting strip ---------- */
+  .greeting-strip{
+    display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;
+    margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border);
+  }
+  .greeting-title{font-family:var(--serif);font-size:26px;font-weight:600;color:var(--ink);margin:0;letter-spacing:-.01em;}
+  .greeting-sub{color:var(--slate-light);font-size:13px;margin-top:4px;}
+  .greeting-date{font-family:var(--mono);font-size:12px;color:var(--slate-light);text-align:right;white-space:nowrap;}
 
   /* ---------- Summary cards ---------- */
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
   .card{
-    background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;
-    padding:16px 18px;box-shadow:0 1px 2px rgba(28,43,74,.05);position:relative;overflow:hidden;
-    transition:box-shadow .15s ease, transform .15s ease;
+    background:var(--paper-raised);border:1px solid var(--border);border-radius:var(--radius-md);
+    padding:17px 18px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
+    transition:box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+    display:flex;flex-direction:column;gap:10px;text-align:left;
   }
-  .card:hover{box-shadow:0 6px 16px rgba(28,43,74,.09);transform:translateY(-1px);}
-  .card::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--blue);opacity:.45;}
-  .card:nth-child(2)::before{background:var(--amber);}
-  .card:nth-child(3)::before{background:var(--sage);}
-  .card:nth-child(4)::before{background:var(--rust);}
+  .card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);border-color:var(--border-strong);}
   .card.clickable{cursor:pointer;}
   .card.clickable:focus-visible{outline:3px solid var(--blue);outline-offset:2px;}
+  .card-icon{
+    width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    background:var(--blue-soft);color:var(--blue);flex-shrink:0;
+  }
+  .card-icon svg{width:17px;height:17px;}
+  .card-icon.tone-amber{background:var(--amber-soft);color:var(--amber);}
+  .card-icon.tone-sage{background:var(--sage-soft);color:var(--sage);}
+  .card-icon.tone-rust{background:var(--rust-soft);color:var(--rust);}
+  .card-icon.tone-ink{background:#E7E9F0;color:var(--ink);}
+  .card-body{display:flex;flex-direction:column;}
   .card-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;}
-  .card-value{font-family:var(--serif);font-size:30px;color:var(--ink);margin-top:6px;}
+  .card-value{font-family:var(--serif);font-size:28px;color:var(--ink);margin-top:5px;line-height:1;}
   .card-value.alert{color:var(--rust);}
-  .card-hint{font-size:11px;color:var(--slate-light);margin-top:2px;}
+  .card-hint{font-size:11px;color:var(--slate-light);margin-top:4px;}
+
+  /* ---------- Attention required panel ---------- */
+  .attention-panel{
+    background:var(--paper-raised);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:4px 0;margin-bottom:22px;box-shadow:var(--shadow-sm);overflow:hidden;
+  }
+  .attention-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;}
+  .attention-title{font-family:var(--serif);font-size:17px;color:var(--ink);margin:0;display:flex;align-items:center;gap:8px;}
+  .attention-title svg{width:17px;height:17px;color:var(--rust);}
+  .attention-list{list-style:none;margin:0;padding:0;}
+  .attention-item{
+    display:flex;align-items:center;gap:12px;padding:11px 20px;border-top:1px solid var(--border);
+    cursor:pointer;transition:background .12s ease;
+  }
+  .attention-item:hover{background:#F7F4EC;}
+  .attention-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .attention-item .dot-alert{background:var(--rust);}
+  .attention-item .dot-warn{background:var(--amber);}
+  .attention-body{flex:1;min-width:0;}
+  .attention-label{font-size:13px;color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .attention-meta{font-size:11.5px;color:var(--slate-light);margin-top:1px;}
+  .attention-badge{font-family:var(--mono);font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+  .attention-badge.alert{background:var(--rust-soft);color:var(--rust);}
+  .attention-badge.warn{background:var(--amber-soft);color:var(--amber);}
+  .attention-empty{padding:20px;text-align:center;color:var(--slate-light);font-size:12.5px;}
 
   /* ---------- Charts ---------- */
   .charts-row{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-bottom:24px;}
-  .chart-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:16px 18px;box-shadow:0 1px 2px rgba(28,43,74,.05);}
-  .chart-card{box-shadow:0 8px 24px rgba(28,43,74,.045);}
-  .chart-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;margin-bottom:10px;}
-  .chart-body{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
-  .legend{list-style:none;padding:0;margin:0;font-size:12px;}
-  .legend li{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+  .chart-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:17px 18px;box-shadow:var(--shadow-sm);}
+  .chart-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;margin-bottom:12px;}
+  .chart-body{display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+  .legend{list-style:none;padding:0;margin:0;font-size:12.5px;flex:1;min-width:140px;}
+  .legend li{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
   .legend .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
   .legend .lbl{color:var(--slate);}
-  .legend .val{font-family:var(--mono);color:var(--slate-light);margin-left:auto;padding-left:10px;}
+  .legend .val{font-family:var(--mono);color:var(--slate-light);margin-left:auto;padding-left:10px;font-size:12px;}
 
   /* ---------- Toolbar ---------- */
   .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
   .search{
-    flex:1;min-width:200px;padding:9px 12px 9px 34px;border:1px solid var(--border-strong);border-radius:7px;
-    font-family:var(--sans);font-size:13px;background:var(--paper-raised) no-repeat 11px center;
+    flex:1;min-width:200px;padding:10px 12px 10px 36px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+    font-family:var(--sans);font-size:13px;background:var(--paper-raised) no-repeat 12px center;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23767C8C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+    transition:border-color .15s ease, box-shadow .15s ease;
   }
+  .search:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,90,140,.12);}
   select.filter{
-    padding:9px 10px;border:1px solid var(--border-strong);border-radius:7px;
+    padding:10px 11px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
     font-family:var(--sans);font-size:13px;background:var(--paper-raised);color:var(--slate);
   }
   .btn{
-    padding:9px 16px;border-radius:7px;border:1px solid var(--ink);background:var(--ink);color:#F5F2EA;
+    padding:10px 17px;border-radius:var(--radius-sm);border:1px solid var(--ink);background:var(--ink);color:#F5F2EA;
     font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
-    display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 2px rgba(28,43,74,.12);
+    display:inline-flex;align-items:center;gap:7px;box-shadow:var(--shadow-sm);
     transition:background .15s ease, box-shadow .15s ease, transform .15s ease;
   }
-  .btn:hover{background:var(--ink-soft);box-shadow:0 4px 12px rgba(28,43,74,.18);transform:translateY(-1px);}
+  .btn:hover{background:var(--ink-soft);box-shadow:var(--shadow-md);transform:translateY(-1px);}
+  .btn:active{transform:translateY(0);}
   .btn svg{width:14px;height:14px;flex-shrink:0;}
-  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--border-strong);}
-  .btn.ghost:hover{background:#EEE9DA;}
-  .btn.small{padding:5px 10px;font-size:12px;}
-  .btn.danger{background:transparent;color:var(--rust);border-color:var(--rust-soft);}
-  .btn.danger:hover{background:var(--rust-soft);}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--border-strong);box-shadow:none;}
+  .btn.ghost:hover{background:#F1EDE2;box-shadow:none;transform:none;}
+  .btn.small{padding:6px 11px;font-size:12px;}
+  .btn.danger{background:transparent;color:var(--rust);border-color:var(--rust-soft);box-shadow:none;}
+  .btn.danger:hover{background:var(--rust-soft);box-shadow:none;transform:none;}
 
   /* ---------- Register / table ---------- */
-  .register{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--paper-raised);box-shadow:0 1px 2px rgba(28,43,74,.05);}
+  .register{border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;background:var(--paper-raised);box-shadow:var(--shadow-sm);}
   .reg-row{
-    display:grid;grid-template-columns:36px 100px 1fr 130px 130px 150px 88px;
+    display:grid;grid-template-columns:34px 100px 1fr 130px 130px 150px 88px;
     gap:10px;padding:13px 16px;align-items:center;border-bottom:1px solid var(--border);
     font-size:13px;transition:background .12s ease;
   }
   .reg-row > div{min-width:0;}
-  .reg-row:hover{background:#F4F0E4;}
+  .reg-row:hover{background:#F8F5EC;}
   .reg-row:last-child{border-bottom:none;}
-  .task-row{grid-template-columns:36px 120px 1fr 150px 70px;}
+  .task-row{grid-template-columns:34px 120px 1fr 150px 70px;}
   .reg-row.head{
-    background:#EFEAD9;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
-    color:var(--slate-light);font-weight:600;padding-top:10px;padding-bottom:10px;
+    background:#F4F1E6;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--slate-light);font-weight:700;padding-top:11px;padding-bottom:11px;
   }
-  .reg-num{font-family:var(--mono);color:var(--slate-light);font-size:12px;}
+  .reg-num{font-family:var(--mono);color:var(--slate-light);font-size:11.5px;}
   .reg-stamp{
-    font-family:var(--mono);font-size:11px;border:1px solid currentColor;border-radius:4px;
-    padding:2px 6px;display:inline-block;transform:rotate(-1deg);white-space:nowrap;
+    font-family:var(--mono);font-size:10.5px;font-weight:600;border-radius:6px;
+    padding:3px 7px;display:inline-block;white-space:nowrap;
   }
-  .stamp-ok{color:var(--sage);}
-  .stamp-warn{color:var(--amber);}
-  .stamp-alert{color:var(--rust);}
-  .reg-subject{font-weight:500;color:var(--ink);}
-  .reg-meta{color:var(--slate-light);font-size:12px;margin-top:2px;}
-  .reg-file{font-family:var(--mono);font-size:12px;color:var(--slate);}
-  .reg-status{font-size:11px;font-weight:600;padding:3px 9px;border-radius:12px;display:inline-block;white-space:normal;line-height:1.35;}
+  .stamp-ok{color:var(--sage);background:var(--sage-soft);}
+  .stamp-warn{color:var(--amber);background:var(--amber-soft);}
+  .stamp-alert{color:var(--rust);background:var(--rust-soft);}
+  .reg-subject{font-weight:500;color:var(--ink);line-height:1.4;}
+  .reg-meta{color:var(--slate-light);font-size:11.5px;margin-top:3px;}
+  .reg-file{font-family:var(--mono);font-size:11.5px;color:var(--slate);}
+  .reg-status{font-size:10.5px;font-weight:600;padding:4px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;white-space:normal;line-height:1.35;}
+  .reg-status::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
   .status-pending{background:var(--amber-soft);color:var(--amber);}
   .status-forwarded{background:var(--blue-soft);color:var(--blue);}
   .status-completed{background:var(--sage-soft);color:var(--sage);}
   .status-returned{background:var(--rust-soft);color:var(--rust);}
   .status-btn{background:none;border:none;padding:0;cursor:pointer;}
-  .status-btn:hover .reg-status{box-shadow:0 0 0 2px rgba(28,43,74,.15);}
+  .status-btn:hover .reg-status{box-shadow:0 0 0 2px rgba(28,43,74,.14);}
   .reg-actions{display:flex;gap:4px;justify-content:flex-end;}
   .icon-btn{
     background:none;border:none;cursor:pointer;color:var(--slate-light);
-    width:29px;height:29px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;
+    width:29px;height:29px;border-radius:var(--radius-sm);display:inline-flex;align-items:center;justify-content:center;
     transition:background .15s ease, color .15s ease;
   }
   .icon-btn svg{width:15px;height:15px;display:block;}
-  .icon-btn:hover{color:var(--ink);background:#EFEAD9;}
+  .icon-btn:hover{color:var(--ink);background:#F1EDE2;}
   .icon-btn.del:hover{color:var(--rust);background:var(--rust-soft);}
 
-  .empty{padding:48px 20px;text-align:center;color:var(--slate-light);font-size:13px;}
+  .empty{padding:52px 20px;text-align:center;color:var(--slate-light);font-size:13px;}
   .empty strong{display:block;color:var(--ink);font-family:var(--serif);font-size:16px;margin-bottom:6px;}
 
   /* ---------- Overview pending drill-down ---------- */
-  .pending-drilldown{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:24px;box-shadow:0 1px 2px rgba(28,43,74,.05);}
+  .pending-drilldown{background:var(--paper-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px;margin-bottom:24px;box-shadow:var(--shadow-sm);}
   .pending-drill-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:12px;}
-  .pending-drill-title{font-family:var(--serif);font-size:19px;color:var(--ink);margin:0;}
+  .pending-drill-title{font-family:var(--serif);font-size:18px;color:var(--ink);margin:0;}
   .pending-table{width:100%;border-collapse:collapse;font-size:13px;}
-  .pending-table th,.pending-table td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;}
-  .pending-table th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-light);}
+  .pending-table th,.pending-table td{padding:11px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;}
+  .pending-table th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-light);}
   .pending-table tr:last-child td{border-bottom:0;}
-  .pending-link{border:0;background:none;color:var(--blue);font:inherit;font-weight:600;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
-  .pending-link:hover{color:var(--ink);}
+  .pending-table tr:hover td{background:#FAF8F1;}
+  .pending-link{border:0;background:none;color:var(--blue);font:inherit;font-weight:600;padding:0;cursor:pointer;}
+  .pending-link:hover{color:var(--ink);text-decoration:underline;text-underline-offset:2px;}
   .case-detail-grid{display:grid;grid-template-columns:150px 1fr;gap:0;border-top:1px solid var(--border);margin-top:16px;}
   .case-detail-grid dt,.case-detail-grid dd{margin:0;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .case-detail-grid dt{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--slate-light);}
   .case-detail-grid dd{color:var(--slate);word-break:break-word;}
-  .case-timeline{margin:18px 0 22px;padding:16px 16px 6px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg,#F7F5EE,#F1F5F7);}
-  .case-timeline-title{font-family:var(--serif);font-size:17px;color:var(--ink);margin:0 0 14px;}
-  .timeline-event{display:grid;grid-template-columns:96px 22px 1fr;gap:10px;min-height:52px;position:relative;}
-  .timeline-date{font-family:var(--mono);font-size:11px;color:var(--slate-light);padding-top:3px;text-align:right;}
+  .case-timeline{margin:18px 0 22px;padding:16px 16px 6px;border:1px solid var(--border);border-radius:var(--radius-md);background:linear-gradient(135deg,#F9F7EF,#F2F6F9);}
+  .case-timeline-title{font-family:var(--serif);font-size:16px;color:var(--ink);margin:0 0 14px;}
+  .timeline-event{display:grid;grid-template-columns:92px 22px 1fr;gap:10px;min-height:52px;position:relative;}
+  .timeline-date{font-family:var(--mono);font-size:10.5px;color:var(--slate-light);padding-top:3px;text-align:right;}
   .timeline-rail{position:relative;display:flex;justify-content:center;}
   .timeline-rail::after{content:"";position:absolute;top:15px;bottom:-6px;width:2px;background:var(--border-strong);}
   .timeline-event:last-child .timeline-rail::after{display:none;}
@@ -217,52 +283,54 @@
   .timeline-event.complete .timeline-dot{background:var(--sage);border-color:#DAE8D8;}
   .timeline-event-label{font-size:13px;color:var(--ink);font-weight:600;padding-bottom:3px;}
   .timeline-event-note{font-size:11.5px;color:var(--slate-light);line-height:1.45;padding-bottom:10px;}
-  .monthly-disposal{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:26px;box-shadow:0 8px 24px rgba(28,43,74,.045);overflow-x:auto;}
+  .monthly-disposal{background:var(--paper-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px;margin-bottom:26px;box-shadow:var(--shadow-sm);overflow-x:auto;}
   .monthly-disposal-head{display:flex;justify-content:space-between;gap:16px;align-items:baseline;margin-bottom:12px;}
-  .monthly-disposal-title{font-family:var(--serif);font-size:19px;color:var(--ink);margin:0;}
+  .monthly-disposal-title{font-family:var(--serif);font-size:18px;color:var(--ink);margin:0;}
   .monthly-disposal-total{font-family:var(--mono);font-size:12px;color:var(--sage);font-weight:600;}
   .monthly-disposal-table{width:100%;border-collapse:collapse;font-size:12px;}
   .monthly-disposal-table th,.monthly-disposal-table td{padding:9px 8px;border-bottom:1px solid var(--border);text-align:right;}
   .monthly-disposal-table th:first-child,.monthly-disposal-table td:first-child{text-align:left;}
   .monthly-disposal-table th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-light);}
-  .monthly-disposal-table tr:last-child td{border-bottom:0;font-weight:700;color:var(--ink);background:#F5F1E5;}
+  .monthly-disposal-table tr:last-child td{border-bottom:0;font-weight:700;color:var(--ink);background:#F6F1E2;}
 
   /* ---------- Drawer / form ---------- */
   .overlay{
-    position:fixed;inset:0;background:rgba(28,43,74,.35);display:none;align-items:stretch;
-    justify-content:flex-end;z-index:50;
+    position:fixed;inset:0;background:rgba(17,26,46,.42);display:none;align-items:stretch;
+    justify-content:flex-end;z-index:50;backdrop-filter:blur(1px);
   }
   .overlay.open{display:flex;}
   .drawer{
     width:440px;max-width:92vw;background:var(--paper-raised);height:100%;padding:28px 26px;
-    overflow-y:auto;box-shadow:-8px 0 24px rgba(0,0,0,.12);position:relative;
+    overflow-y:auto;box-shadow:-12px 0 32px rgba(0,0,0,.14);position:relative;
   }
   .drawer h2{font-family:var(--serif);font-size:20px;color:var(--ink);margin:0 0 4px;}
-  .drawer .drawer-sub{font-size:12px;color:var(--slate-light);margin-bottom:20px;}
-  .field{margin-bottom:14px;}
-  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
-  .field .hint{font-size:11px;color:var(--slate-light);margin-top:4px;}
+  .drawer .drawer-sub{font-size:12px;color:var(--slate-light);margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+  .field{margin-bottom:15px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+  .field .hint{font-size:11px;color:var(--slate-light);margin-top:5px;line-height:1.4;}
   .field input, .field select, .field textarea{
-    width:100%;padding:9px 10px;border:1px solid var(--border-strong);border-radius:6px;
+    width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
     font-family:var(--sans);font-size:13px;background:#fff;color:var(--slate);
+    transition:border-color .15s ease, box-shadow .15s ease;
   }
-  .field select:disabled, .field input:disabled{background:#EFEAD9;color:var(--slate-light);cursor:not-allowed;}
-  .field textarea{resize:vertical;min-height:60px;}
-  .drawer-actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
-  .drawer-actions .btn{flex:1;min-width:120px;}
-  .close-x{position:absolute;top:24px;right:26px;background:none;border:none;cursor:pointer;color:var(--slate-light);display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;transition:background .15s ease,color .15s ease;}
-  .close-x:hover{color:var(--ink);background:#EFEAD9;}
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,90,140,.1);}
+  .field select:disabled, .field input:disabled{background:#F1EDE2;color:var(--slate-light);cursor:not-allowed;}
+  .field textarea{resize:vertical;min-height:64px;}
+  .drawer-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;}
+  .drawer-actions .btn{flex:1;min-width:120px;justify-content:center;}
+  .close-x{position:absolute;top:24px;right:26px;background:none;border:none;cursor:pointer;color:var(--slate-light);display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:var(--radius-sm);transition:background .15s ease,color .15s ease;}
+  .close-x:hover{color:var(--ink);background:#F1EDE2;}
 
   /* ---------- Reports ---------- */
   .report-controls{
     display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--paper-raised);
-    border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:20px;
+    border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 18px;margin-bottom:20px;box-shadow:var(--shadow-sm);
   }
   .report-controls label{font-size:12px;font-weight:600;color:var(--ink-soft);}
   .report-controls select, .report-controls input{
-    padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-family:var(--sans);font-size:13px;
+    padding:9px 11px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-family:var(--sans);font-size:13px;
   }
-  #reportOutput{background:#fff;border:1px solid var(--border);border-radius:10px;padding:30px 34px;display:none;}
+  #reportOutput{background:#fff;border:1px solid var(--border);border-radius:var(--radius-md);padding:30px 34px;display:none;box-shadow:var(--shadow-sm);}
   .report-header{border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:20px;}
   .report-org{font-size:12px;color:var(--slate-light);letter-spacing:.04em;text-transform:uppercase;}
   .report-section{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-top:2px;}
@@ -275,20 +343,20 @@
   .report-summary b{font-family:var(--serif);font-size:18px;display:block;color:var(--ink);}
   .report-cat-title{font-family:var(--serif);font-size:16px;color:var(--ink);margin:22px 0 8px;border-bottom:1px solid var(--border);padding-bottom:6px;}
   table.report-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;}
-  table.report-table th, table.report-table td{border:1px solid #C7BEA6;padding:7px 9px;text-align:left;vertical-align:top;}
-  table.report-table th{background:#EFEAD9;font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
+  table.report-table th, table.report-table td{border:1px solid #CFC7B4;padding:7px 9px;text-align:left;vertical-align:top;}
+  table.report-table th{background:#F4F1E6;font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
   table.report-summary-table{width:auto;min-width:320px;border-collapse:collapse;font-size:14px;margin:14px 0 22px;}
-  table.report-summary-table th, table.report-summary-table td{border:1px solid #C7BEA6;padding:7px 14px;text-align:left;}
-  table.report-summary-table th{background:#EFEAD9;font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
+  table.report-summary-table th, table.report-summary-table td{border:1px solid #CFC7B4;padding:7px 14px;text-align:left;}
+  table.report-summary-table th{background:#F4F1E6;font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
   table.report-summary-table td:last-child{text-align:right;font-family:var(--mono);}
-  table.report-summary-table tr.total-row td{font-weight:700;background:#F7F3E8;}
+  table.report-summary-table tr.total-row td{font-weight:700;background:#F8F3E6;}
   .report-empty{font-size:13px;color:var(--slate-light);font-style:italic;margin-bottom:10px;}
   .dp-bucket-section{page-break-before:always;}
 
   /* ---------- Toast ---------- */
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#F5F2EA;
-    padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:100;
+    padding:11px 20px;border-radius:var(--radius-sm);font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:100;box-shadow:var(--shadow-lg);
   }
   .toast.show{opacity:1;}
 
@@ -307,18 +375,24 @@
     .reg-row{grid-template-columns:1fr;gap:4px;}
     .reg-row.head{display:none;}
     .main{padding:20px;}
+    .greeting-strip{flex-direction:column;align-items:flex-start;}
+    .greeting-date{text-align:left;}
     #reportOutput{padding:18px;}
   }
 </style>
+
 </head>
 <body>
 
 <div class="app" id="appRoot">
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-eyebrow">Department of Personnel &amp; Training</div>
-      <div class="brand-title">AVD-II (B)<br>Case Register</div>
-      <div class="brand-sub">Litigation &amp; disciplinary case tracker</div>
+      <div class="brand-mark">AB</div>
+      <div class="brand-text">
+        <div class="brand-eyebrow">Department of Personnel &amp; Training</div>
+        <div class="brand-title">AVD-II (B)<br>Case Register</div>
+        <div class="brand-sub">Litigation &amp; disciplinary case tracker</div>
+      </div>
     </div>
     <ul class="nav" id="navList"></ul>
     <div class="sidebar-foot">
@@ -333,6 +407,7 @@
         <h1 class="page-title" id="pageTitle">Overview</h1>
         <div class="page-desc" id="pageDesc">All pending matters across the section, at a glance.</div>
       </div>
+      <div class="greeting-date" id="pageDate" style="display:none;"></div>
       <button class="btn" id="addBtn" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span>New entry</span></button>
     </div>
 
@@ -469,9 +544,10 @@ const BUCKET_LABELS = {
 };
 function disciplinaryBucket(r) {
   if ((r["Under Stay (CAT/High Court)"] || "No") === "Yes") return "Stayed";
-  const mapped = STAGE_TO_BUCKET[r.Stage];
-  if (mapped === undefined) return "DoPT";
-  return mapped;
+  if (r["Pending With"]) return r["Pending With"];
+  // Fallback for rows saved before the "Pending With" field existed.
+  const mapped = STAGE_TO_BUCKET[canonicalStage(r.Stage)];
+  return mapped === undefined ? "DoPT" : mapped;
 }
 const COMPLETED_LITIGATION_CATEGORIES = ["SLP", "Appeals", "Withdrawal"];
 const LITIGATION_PENDING_BUCKETS = {
@@ -640,7 +716,7 @@ const SCHEMAS = {
     label: "Disciplinary Proceedings",
     desc: "Disciplinary proceeding cases and their current stage.",
     statusOptions: DISCIPLINARY_STATUSES,
-    statusQuickFields: ["Checklist Compliance", "Date of Return of Proposal", "Compliance Received from CBI", "Date of Receiving Compliance", "Stage", "Date of IO Change Request", "Date of PO Change Request", "Date received for DoPT action", "Date final order issued", "Status"],
+    statusQuickFields: ["Checklist Compliance", "Date of Return of Proposal", "Compliance Received from CBI", "Date of Receiving Compliance", "Stage", "Pending With", "Date of IO Change Request", "Date of PO Change Request", "Date received for DoPT action", "Date final order issued", "Status"],
     fields: [
       { key: "Date of Receipt", label: "Date of receipt", type: "date", required: true },
       { key: "Name & Designation of Delinquent", label: "Name & designation of delinquent officer", type: "text" },
@@ -652,6 +728,7 @@ const SCHEMAS = {
       { key: "Computer No", label: "Computer no.", type: "text" },
       { key: "Subject", label: "Subject / brief charge", type: "textarea", required: true },
       { key: "Stage", label: "Stage of case", type: "select", options: DISCIPLINARY_STAGES, default: "Case Received from CBI" },
+      { key: "Pending With", label: "Pending with", type: "select", options: ["DoPT", "CBI", "IA", "UPSC", "CO"], default: "DoPT", hint: "This is what decides the case's bucket in Overview/Reports — set it directly rather than relying on Stage. DoPT = with your section for examination/decision; IA = with the Inquiry Authority; CO = with the Charged Officer (WSD/representation awaited); overridden automatically by \"Under stay\" below when that's Yes." },
       { key: "Date of IO Change Request", label: "Date of CBI request (change of IO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of IO" } },
       { key: "Date of PO Change Request", label: "Date of CBI request (change of PO)", type: "date", showIf: { field: "Stage", equals: "Request received from CBI for change of PO" } },
       ...DP_TIMELINE_DATE_FIELDS,
@@ -692,6 +769,25 @@ const CAT_COLORS = { SLP: "#1C2B4A", Appeals: "#4A6B54", Withdrawal: "#93691E", 
 const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+const NAV_ICONS = {
+  overview: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+  SLP: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/><path d="M9 13h6M9 17h4"/></svg>',
+  Appeals: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l-3 6a3.5 3.5 0 0 0 6 0Z"/><path d="M19 7l-3 6a3.5 3.5 0 0 0 6 0Z"/><path d="M5 7h14M8 21h8"/></svg>',
+  Withdrawal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>',
+  Disciplinary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3 7.5 8 9 5-1.5 8-4.5 8-9V6Z"/><path d="m9.5 12 1.8 1.8L15 10"/></svg>',
+  Suspension: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9v6M15 9v6"/></svg>',
+  tasks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  reports: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>'
+};
+const ICON_KPI = {
+  total: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  pending: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.9 18a1.6 1.6 0 0 0 1.4 2.4h17.4a1.6 1.6 0 0 0 1.4-2.4L13.7 3.9a1.6 1.6 0 0 0-2.8 0Z"/><path d="M12 9v4M12 17h.01"/></svg>',
+  done: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.3 2.3L16 10"/></svg>',
+  inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6Z"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>'
+};
 
 /* ---------------------------------------------------------------------
    Tasks — delegation list. Kept deliberately separate from SCHEMAS/CATS
@@ -844,11 +940,11 @@ function renderNav() {
   const items = [{ key: "overview", label: "Overview" }, ...CATS.map(c => ({ key: c, label: SCHEMAS[c].label }))];
   let html = items.map(it => {
     const count = it.key === "overview" ? "" : `<span class="count">${(DATA[it.key]||[]).length}</span>`;
-    const dot = CAT_COLORS[it.key] ? `<span class="nav-dot" style="background:${CAT_COLORS[it.key]}"></span>` : `<span class="nav-dot" style="background:transparent"></span>`;
-    return `<li><button data-tab="${it.key}" class="${currentTab===it.key?'active':''}">${dot}<span class="nav-label">${it.label}</span>${count}</button></li>`;
+    const icon = NAV_ICONS[it.key] ? `<span class="nav-icon">${NAV_ICONS[it.key]}</span>` : `<span class="nav-dot" style="background:${CAT_COLORS[it.key]||'transparent'}"></span>`;
+    return `<li><button data-tab="${it.key}" class="${currentTab===it.key?'active':''}">${icon}<span class="nav-label">${it.label}</span>${count}</button></li>`;
   }).join("");
-  html += `<li class="sep"></li><li><button data-tab="tasks" class="${currentTab==='tasks'?'active':''}"><span class="nav-dot" style="background:transparent"></span><span class="nav-label">Tasks</span>${DATA.Tasks ? `<span class="count">${DATA.Tasks.filter(t=>t.Status!=="Completed").length}</span>` : ""}</button></li>`;
-  html += `<li><button data-tab="reports" class="${currentTab==='reports'?'active':''}"><span class="nav-dot" style="background:transparent"></span><span class="nav-label">Reports</span></button></li>`;
+  html += `<li class="sep"></li><li><button data-tab="tasks" class="${currentTab==='tasks'?'active':''}"><span class="nav-icon">${NAV_ICONS.tasks}</span><span class="nav-label">Tasks</span>${DATA.Tasks ? `<span class="count">${DATA.Tasks.filter(t=>t.Status!=="Completed").length}</span>` : ""}</button></li>`;
+  html += `<li><button data-tab="reports" class="${currentTab==='reports'?'active':''}"><span class="nav-icon">${NAV_ICONS.reports}</span><span class="nav-label">Reports</span></button></li>`;
   nav.innerHTML = html;
   nav.querySelectorAll("button").forEach(b => b.onclick = () => { currentTab = b.dataset.tab; searchTerm=""; statusFilterVal=""; overviewDrilldown = { mode: "", category: "", bucket: "", via: "" }; categoryDrilldown = { active: false, bucket: "" }; renderNav(); renderPage(); });
 }
@@ -961,6 +1057,8 @@ function renderPage() {
   const content = document.getElementById("content");
   const cards = document.getElementById("cards");
   const chartsRow = document.getElementById("chartsRow");
+  const pageDate = document.getElementById("pageDate");
+  pageDate.style.display = "none";
 
   if (currentTab === "tasks") {
     title.textContent = "Tasks";
@@ -989,8 +1087,12 @@ function renderPage() {
   }
 
   if (currentTab === "overview") {
-    title.textContent = "Overview";
-    desc.textContent = "All pending matters across the section, at a glance.";
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    title.textContent = greeting;
+    desc.textContent = "Here's an overview of your section's work — all pending matters at a glance.";
+    pageDate.textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    pageDate.style.display = "block";
     addBtn.style.display = "none";
     toolbarWrap.style.display = "none";
     renderOverviewCards();
@@ -1035,10 +1137,10 @@ function renderOverviewCards() {
   const pendingWithDoPT = allPendingCases("DoPT").length;
   const noAction = noActionSinceCases().length;
   cards.innerHTML = `
-    <button class="card clickable" type="button" data-overview-drill="total"><div class="card-label">Total cases</div><div class="card-value">${total}</div><div class="card-hint">Click to view all cases</div></button>
-    <button class="card clickable" type="button" data-pending-drill="all"><div class="card-label">Total pending</div><div class="card-value">${pending}</div><div class="card-hint">Click for pending-with breakup</div></button>
-    <button class="card clickable" type="button" data-pending-drill="DoPT"><div class="card-label">Pending with DoPT</div><div class="card-value">${pendingWithDoPT}</div><div class="card-hint">Click to see cases</div></button>
-    <button class="card clickable" type="button" data-no-action-cases><div class="card-label">No action since &gt;15 days</div><div class="card-value ${noAction?'alert':''}">${noAction}</div><div class="card-hint">With DoPT, from last receipt / representation</div></button>
+    <button class="card clickable" type="button" data-overview-drill="total"><div class="card-icon tone-ink">${ICON_KPI.total}</div><div class="card-body"><div class="card-label">Total cases</div><div class="card-value">${total}</div><div class="card-hint">Click to view all cases</div></div></button>
+    <button class="card clickable" type="button" data-pending-drill="all"><div class="card-icon">${ICON_KPI.pending}</div><div class="card-body"><div class="card-label">Total pending</div><div class="card-value">${pending}</div><div class="card-hint">Click for pending-with breakup</div></div></button>
+    <button class="card clickable" type="button" data-pending-drill="DoPT"><div class="card-icon tone-amber">${ICON_KPI.inbox}</div><div class="card-body"><div class="card-label">Pending with DoPT</div><div class="card-value">${pendingWithDoPT}</div><div class="card-hint">Click to see cases</div></div></button>
+    <button class="card clickable" type="button" data-no-action-cases><div class="card-icon tone-rust">${ICON_KPI.alert}</div><div class="card-body"><div class="card-label">No action since &gt;15 days</div><div class="card-value ${noAction?'alert':''}">${noAction}</div><div class="card-hint">With DoPT, from last receipt / representation</div></div></button>
   `;
   cards.querySelectorAll("[data-pending-drill]").forEach(card => card.onclick = () => {
     overviewDrilldown = card.dataset.pendingDrill === "all"
@@ -1088,10 +1190,10 @@ function renderCategoryCards(cat) {
     const dueSoon = active.filter(r => { const d = daysSince(r["Suspension Valid Upto"]); return d !== null && d <= 0 && d >= -15; });
     const resolved = rows.filter(r => isCompleted(cat, r));
     cards.innerHTML = `
-      <div class="card"><div class="card-label">Total</div><div class="card-value">${rows.length}</div></div>
-      <div class="card"><div class="card-label">Under suspension</div><div class="card-value">${active.length}</div></div>
-      <div class="card"><div class="card-label">Review overdue</div><div class="card-value ${overdue.length?'alert':''}">${overdue.length}</div><div class="card-hint">Order may lapse — Rule 10(6)</div></div>
-      <div class="card"><div class="card-label">Review due &le;15 days</div><div class="card-value">${dueSoon.length}</div></div>
+      <div class="card"><div class="card-icon tone-ink">${ICON_KPI.total}</div><div class="card-body"><div class="card-label">Total</div><div class="card-value">${rows.length}</div></div></div>
+      <div class="card"><div class="card-icon">${ICON_KPI.pending}</div><div class="card-body"><div class="card-label">Under suspension</div><div class="card-value">${active.length}</div></div></div>
+      <div class="card"><div class="card-icon tone-rust">${ICON_KPI.alert}</div><div class="card-body"><div class="card-label">Review overdue</div><div class="card-value ${overdue.length?'alert':''}">${overdue.length}</div><div class="card-hint">Order may lapse — Rule 10(6)</div></div></div>
+      <div class="card"><div class="card-icon tone-amber">${ICON_KPI.calendar}</div><div class="card-body"><div class="card-label">Review due &le;15 days</div><div class="card-value">${dueSoon.length}</div></div></div>
     `;
     return;
   }
@@ -1100,12 +1202,12 @@ function renderCategoryCards(cat) {
   const completed = rows.filter(r => isCompleted(cat, r)).length;
   const pendingClickable = DASHBOARD_PENDING_CATEGORIES.includes(cat);
   cards.innerHTML = `
-    <div class="card"><div class="card-label">Total</div><div class="card-value">${rows.length}</div></div>
+    <div class="card"><div class="card-icon tone-ink">${ICON_KPI.total}</div><div class="card-body"><div class="card-label">Total</div><div class="card-value">${rows.length}</div></div></div>
     ${pendingClickable
-      ? `<button class="card clickable" type="button" id="categoryPendingCard"><div class="card-label">Pending</div><div class="card-value">${pending}</div><div class="card-hint">Click for pending-with breakup</div></button>`
-      : `<div class="card"><div class="card-label">Pending</div><div class="card-value">${pending}</div></div>`}
-    <div class="card"><div class="card-label">No action since &gt;15 days</div><div class="card-value ${noAction?'alert':''}">${noAction}</div><div class="card-hint">With DoPT only</div></div>
-    <div class="card"><div class="card-label">Completed</div><div class="card-value">${completed}</div></div>
+      ? `<button class="card clickable" type="button" id="categoryPendingCard"><div class="card-icon">${ICON_KPI.pending}</div><div class="card-body"><div class="card-label">Pending</div><div class="card-value">${pending}</div><div class="card-hint">Click for pending-with breakup</div></div></button>`
+      : `<div class="card"><div class="card-icon">${ICON_KPI.pending}</div><div class="card-body"><div class="card-label">Pending</div><div class="card-value">${pending}</div></div></div>`}
+    <div class="card"><div class="card-icon tone-rust">${ICON_KPI.alert}</div><div class="card-body"><div class="card-label">No action since &gt;15 days</div><div class="card-value ${noAction?'alert':''}">${noAction}</div><div class="card-hint">With DoPT only</div></div></div>
+    <div class="card"><div class="card-icon tone-sage">${ICON_KPI.done}</div><div class="card-body"><div class="card-label">Completed</div><div class="card-value">${completed}</div></div></div>
   `;
   if (pendingClickable) {
     document.getElementById("categoryPendingCard").onclick = () => {
@@ -1171,7 +1273,7 @@ function renderOverviewLists() {
   if (overviewDrilldown.mode === "pending-cases") return renderPendingCasesOnly(overviewDrilldown.category, overviewDrilldown.bucket);
   if (overviewDrilldown.mode === "no-action-cases") return renderNoActionCases();
   const drilldown = "";
-  return drilldown + renderMonthlyDisposalDashboard() + CATS.map(c => {
+  return drilldown + renderAttentionRequired() + renderMonthlyDisposalDashboard() + CATS.map(c => {
     const rows = (DATA[c] || []).filter(r => !isCompleted(c, r))
       .sort((a,b) => new Date(a["Date of Receipt"]) - new Date(b["Date of Receipt"])).slice(0, 5);
     return `
@@ -1187,6 +1289,35 @@ function renderOverviewLists() {
   }).join("");
 }
 
+function renderAttentionRequired() {
+  const items = [];
+
+  noActionSinceCases().forEach(({ cat, r, days }) => {
+    items.push({ cat, id: r.ID, tone: "alert", badge: `${days}d no action`, label: r.Subject || "(no subject)", meta: `${pendingCategoryLabel(cat)} · File No. ${r["File No"] || "—"}`, sortKey: 1000 + days });
+  });
+
+  (DATA.Suspension || []).forEach(r => {
+    if (isCompleted("Suspension", r)) return;
+    const d = daysSince(r["Suspension Valid Upto"]);
+    if (d === null) return;
+    if (d > 0) items.push({ cat: "Suspension", id: r.ID, tone: "alert", badge: `Review overdue ${d}d`, label: r.Subject || "(no subject)", meta: `Suspension · ${r["Name & Designation of Officer"] || "—"}`, sortKey: 1000 + d });
+    else if (d >= -15) items.push({ cat: "Suspension", id: r.ID, tone: "warn", badge: d === 0 ? "Review due today" : `Review due in ${Math.abs(d)}d`, label: r.Subject || "(no subject)", meta: `Suspension · ${r["Name & Designation of Officer"] || "—"}`, sortKey: 500 - d });
+  });
+
+  (DATA.Tasks || []).forEach(t => {
+    if (t.Status === "Completed") return;
+    const d = daysSince(t["Due Date"]);
+    if (d === null) return;
+    if (d > 0) items.push({ cat: "Tasks", id: t.ID, tone: "alert", badge: `Overdue ${d}d`, label: t.Task || "(untitled task)", meta: `Task${t["Assigned To"] ? " · " + t["Assigned To"] : ""}`, sortKey: 1000 + d });
+    else if (d >= -3) items.push({ cat: "Tasks", id: t.ID, tone: "warn", badge: d === 0 ? "Due today" : `Due in ${Math.abs(d)}d`, label: t.Task || "(untitled task)", meta: `Task${t["Assigned To"] ? " · " + t["Assigned To"] : ""}`, sortKey: 500 - d });
+  });
+
+  items.sort((a, b) => b.sortKey - a.sortKey);
+  const top = items.slice(0, 8);
+  const rows = top.map(it => `<li class="attention-item" data-attention-cat="${it.cat}" data-attention-id="${it.id}"><span class="attention-dot dot-${it.tone}"></span><div class="attention-body"><div class="attention-label">${escapeHtml(it.label)}</div><div class="attention-meta">${escapeHtml(it.meta)}</div></div><span class="attention-badge ${it.tone}">${escapeHtml(it.badge)}</span></li>`).join("");
+
+  return `<div class="attention-panel"><div class="attention-head"><h2 class="attention-title">${ICON_KPI.alert} Attention required</h2></div><ul class="attention-list">${top.length ? rows : `<div class="attention-empty">Nothing needs immediate attention right now.</div>`}</ul></div>`;
+}
 function pendingCategoryLabel(category) {
   return ({ SLP: "SLPs", Appeals: "Appeals", Withdrawal: "Withdrawals", Disciplinary: "DP Cases" })[category] || SCHEMAS[category].label;
 }
@@ -1292,10 +1423,10 @@ function renderTaskCards() {
   const overdue = pending.filter(t => { const d = daysSince(t["Due Date"]); return d !== null && d > 0; });
   const completed = rows.filter(t => t.Status === "Completed");
   cards.innerHTML = `
-    <div class="card"><div class="card-label">Total tasks</div><div class="card-value">${rows.length}</div></div>
-    <div class="card"><div class="card-label">Pending</div><div class="card-value">${pending.length}</div></div>
-    <div class="card"><div class="card-label">Overdue</div><div class="card-value ${overdue.length?'alert':''}">${overdue.length}</div></div>
-    <div class="card"><div class="card-label">Completed</div><div class="card-value">${completed.length}</div></div>
+    <div class="card"><div class="card-icon tone-ink">${ICON_KPI.total}</div><div class="card-body"><div class="card-label">Total tasks</div><div class="card-value">${rows.length}</div></div></div>
+    <div class="card"><div class="card-icon">${ICON_KPI.pending}</div><div class="card-body"><div class="card-label">Pending</div><div class="card-value">${pending.length}</div></div></div>
+    <div class="card"><div class="card-icon tone-rust">${ICON_KPI.alert}</div><div class="card-body"><div class="card-label">Overdue</div><div class="card-value ${overdue.length?'alert':''}">${overdue.length}</div></div></div>
+    <div class="card"><div class="card-icon tone-sage">${ICON_KPI.done}</div><div class="card-body"><div class="card-label">Completed</div><div class="card-value">${completed.length}</div></div></div>
   `;
 }
 
@@ -1494,6 +1625,16 @@ function attachRowHandlers() {
     categoryDrilldown.bucket = "";
     document.getElementById("content").innerHTML = renderPendingBuckets(currentTab, true);
     attachRowHandlers();
+  });
+  document.querySelectorAll("[data-attention-cat]").forEach(el => el.onclick = () => {
+    const cat = el.dataset.attentionCat, id = el.dataset.attentionId;
+    if (cat === "Tasks") {
+      const t = (DATA.Tasks||[]).find(x => x.ID === id);
+      if (t) openTaskDrawer(t);
+    } else {
+      const rec = (DATA[cat]||[]).find(r => r.ID === id);
+      if (rec) openCaseDetail(cat, rec);
+    }
   });
   const s = document.getElementById("searchInput");
   const f = document.getElementById("statusFilter");
