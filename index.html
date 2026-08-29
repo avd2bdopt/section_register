@@ -65,8 +65,14 @@
   .sidebar{
     width:256px;flex-shrink:0;background:linear-gradient(175deg,#152140 0%,var(--ink) 55%,#101B33 100%);color:#EDE9DD;
     padding:26px 18px;position:sticky;top:0;height:100vh;overflow-y:auto;
-    display:flex;flex-direction:column;
+    display:flex;flex-direction:column;position:relative;
   }
+  .sidebar-skyline{
+    position:absolute;left:0;right:0;bottom:0;height:150px;pointer-events:none;
+    background:url("assets/institutional_skyline.webp") center bottom / cover no-repeat;
+    filter:brightness(2.6);opacity:.15;z-index:0;
+  }
+  .sidebar > *{position:relative;z-index:1;}
   .sidebar::-webkit-scrollbar{width:6px;}
   .sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:6px;}
   .brand{margin-bottom:8px;display:flex;align-items:flex-start;gap:11px;}
@@ -283,6 +289,7 @@
 
   .empty{padding:52px 20px;text-align:center;color:var(--slate-light);font-size:13px;}
   .empty strong{display:block;color:var(--ink);font-family:var(--serif);font-size:16px;margin-bottom:6px;}
+  .empty-illustration{width:96px;height:auto;margin:0 auto 12px;display:block;opacity:.92;}
 
   /* ---------- Overview pending drill-down ---------- */
   .pending-drilldown{background:var(--paper-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px;margin-bottom:24px;box-shadow:var(--shadow-sm);}
@@ -398,6 +405,7 @@
   @media (max-width: 880px){
     .app{flex-direction:column;}
     .sidebar{width:100%;height:auto;position:relative;}
+    .sidebar-skyline{display:none;}
     .cards{grid-template-columns:repeat(2,1fr);}
     .charts-row{grid-template-columns:1fr;}
     .reg-row{grid-template-columns:1fr;gap:4px;}
@@ -414,6 +422,7 @@
 
 <div class="app" id="appRoot">
   <aside class="sidebar">
+    <div class="sidebar-skyline" aria-hidden="true"></div>
     <div class="brand">
       <div class="brand-mark">AB</div>
       <div class="brand-text">
@@ -1371,7 +1380,7 @@ function renderOverviewLists() {
           <button class="btn ghost small" data-goto="${c}">View all (${(DATA[c]||[]).length})</button>
         </div>
         <div class="register">
-          ${rows.length ? rows.map((r,i) => registerRow(c, r, i)).join("") : `<div class="empty">No pending entries.</div>`}
+          ${rows.length ? rows.map((r,i) => registerRow(c, r, i)).join("") : `<div class="empty"><img class="empty-illustration" src="assets/empty_state_completed.webp" alt=""><span>No pending entries.</span></div>`}
         </div>
       </div>`;
   }).join("");
@@ -1549,7 +1558,7 @@ function renderTaskList() {
   });
 
   if (!rows.length) {
-    return `<div class="register"><div class="empty"><strong>No tasks yet</strong>Click "New entry" to delegate the first task.</div></div>`;
+    return `<div class="register"><div class="empty"><img class="empty-illustration" src="assets/task_productivity.webp" alt=""><strong>No tasks yet</strong>Click "New entry" to delegate the first task.</div></div>`;
   }
   return `<div class="register">
     <div class="reg-row head task-row"><div></div><div>Due</div><div>Task</div><div>Status</div><div></div></div>
