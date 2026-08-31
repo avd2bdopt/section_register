@@ -819,6 +819,7 @@ const NAV_ICONS = {
   Disciplinary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3 7.5 8 9 5-1.5 8-4.5 8-9V6Z"/><path d="m9.5 12 1.8 1.8L15 10"/></svg>',
   Suspension: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9v6M15 9v6"/></svg>',
   tasks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  receipts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16v18l-3-2-2.5 2-2.5-2-2.5 2L7 19l-3 2Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
   reports: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>'
 };
 const ICON_KPI = {
@@ -845,6 +846,25 @@ const TASK_FIELDS = [
 ];
 
 /* ---------------------------------------------------------------------
+   Receipts — dak/diary register: what came in, when the US saw it, who
+   it's assigned to, and by when it's to be done. Kept separate from
+   SCHEMAS/CATS for the same reason as Tasks — it's a log, not a case
+   category, so it never affects Overview pending counts or Reports.
+   "Subject / Particulars" was added on top of the requested fields so
+   entries are identifiable — the requested fields alone (dates + who)
+   wouldn't say what was actually received.
+   --------------------------------------------------------------------- */
+const RECEIPT_FIELDS = [
+  { key: "Date of Receipt", label: "Date of receipt", type: "date", required: true },
+  { key: "Date Received by US (AVD-II(B))", label: "Date received by US (AVD-II(B))", type: "date" },
+  { key: "Subject / Particulars", label: "Subject / particulars", type: "textarea", required: true },
+  { key: "Assigned To", label: "Assigned to", type: "text" },
+  { key: "To Be Done By", label: "To be done by", type: "date" },
+  { key: "Status", label: "Status", type: "select", options: ["Pending", "Completed"], default: "Pending" },
+  { key: "Remarks", label: "Remarks", type: "textarea" }
+];
+
+/* ---------------------------------------------------------------------
    Data layer — talks to Apps Script if CONFIG.API_URL is set,
    otherwise falls back to localStorage demo mode.
    --------------------------------------------------------------------- */
@@ -856,7 +876,7 @@ function demoStore() {
   let s = localStorage.getItem(LS_KEY);
   if (s) return JSON.parse(s);
   const seed = {};
-  [...CATS, "Tasks"].forEach(c => seed[c] = []);
+  [...CATS, "Tasks", "Receipts"].forEach(c => seed[c] = []);
   localStorage.setItem(LS_KEY, JSON.stringify(seed));
   return seed;
 }
@@ -1041,6 +1061,7 @@ function renderNav() {
     return `<li><button data-tab="${it.key}" class="${currentTab===it.key?'active':''}">${icon}<span class="nav-label">${it.label}</span>${count}</button></li>`;
   }).join("");
   html += `<li class="sep"></li><li><button data-tab="tasks" class="${currentTab==='tasks'?'active':''}"><span class="nav-icon">${NAV_ICONS.tasks}</span><span class="nav-label">Tasks</span>${DATA.Tasks ? `<span class="count">${DATA.Tasks.filter(t=>t.Status!=="Completed").length}</span>` : ""}</button></li>`;
+  html += `<li><button data-tab="receipts" class="${currentTab==='receipts'?'active':''}"><span class="nav-icon">${NAV_ICONS.receipts}</span><span class="nav-label">Receipts</span>${DATA.Receipts ? `<span class="count">${DATA.Receipts.filter(r=>r.Status!=="Completed").length}</span>` : ""}</button></li>`;
   html += `<li><button data-tab="reports" class="${currentTab==='reports'?'active':''}"><span class="nav-icon">${NAV_ICONS.reports}</span><span class="nav-label">Reports</span></button></li>`;
   nav.innerHTML = html;
   nav.querySelectorAll("button").forEach(b => b.onclick = () => { currentTab = b.dataset.tab; searchTerm=""; statusFilterVal=""; overviewDrilldown = { mode: "", category: "", bucket: "", via: "" }; categoryDrilldown = { active: false, bucket: "" }; renderNav(); renderPage(); });
@@ -1169,6 +1190,21 @@ function renderPage() {
     renderTaskCards();
     content.innerHTML = renderTaskList();
     attachTaskHandlers();
+    return;
+  }
+
+  if (currentTab === "receipts") {
+    title.textContent = "Receipts";
+    desc.textContent = "Dak/diary register — receipt date, when the US saw it, who it's assigned to, and the target date.";
+    addBtn.style.display = "inline-block";
+    addBtn.onclick = () => openReceiptDrawer(null);
+    toolbarWrap.style.display = "flex";
+    const receiptStatusFilter = document.getElementById("statusFilter");
+    receiptStatusFilter.innerHTML = `<option value="">All statuses</option><option value="Pending">Pending</option><option value="Completed">Completed</option>`;
+    cards.innerHTML = ""; chartsRow.innerHTML = "";
+    renderReceiptCards();
+    content.innerHTML = renderReceiptList();
+    attachReceiptHandlers();
     return;
   }
 
@@ -1659,6 +1695,156 @@ function openTaskDrawer(record) {
   document.getElementById("overlay").classList.add("open");
 }
 
+function renderReceiptCards() {
+  const cards = document.getElementById("cards");
+  const rows = DATA.Receipts || [];
+  const pending = rows.filter(r => r.Status !== "Completed");
+  const overdue = pending.filter(r => { const d = daysSince(r["To Be Done By"]); return d !== null && d > 0; });
+  const completed = rows.filter(r => r.Status === "Completed");
+  cards.innerHTML = `
+    <div class="card"><div class="card-icon tone-ink">${ICON_KPI.total}</div><div class="card-body"><div class="card-label">Total receipts</div><div class="card-value">${rows.length}</div></div></div>
+    <div class="card"><div class="card-icon">${ICON_KPI.pending}</div><div class="card-body"><div class="card-label">Pending</div><div class="card-value">${pending.length}</div></div></div>
+    <div class="card"><div class="card-icon tone-rust">${ICON_KPI.alert}</div><div class="card-body"><div class="card-label">Overdue</div><div class="card-value ${overdue.length?'alert':''}">${overdue.length}</div></div></div>
+    <div class="card"><div class="card-icon tone-sage">${ICON_KPI.done}</div><div class="card-body"><div class="card-label">Completed</div><div class="card-value">${completed.length}</div></div></div>
+  `;
+}
+
+function receiptRow(r, idx) {
+  const done = r.Status === "Completed";
+  const metaBits = [];
+  metaBits.push("Received " + (formatIndianDate(r["Date of Receipt"]) || "—"));
+  if (r["Date Received by US (AVD-II(B))"]) metaBits.push("US on " + formatIndianDate(r["Date Received by US (AVD-II(B))"]));
+  if (r["Assigned To"]) metaBits.push("Assigned to " + escapeHtml(r["Assigned To"]));
+  return `
+    <div class="reg-row task-row" data-id="${r.ID}">
+      <div class="reg-num">${idx+1}.</div>
+      <div>${dueDateStamp(r["To Be Done By"], done)}</div>
+      <div>
+        <div class="reg-subject">${escapeHtml(r["Subject / Particulars"] || "(no particulars)")}</div>
+        <div class="reg-meta">${metaBits.join(" · ")}</div>
+      </div>
+      <div><button class="status-btn receipt-complete-btn" data-id="${r.ID}" title="${done ? "Mark pending" : "Mark complete"}"><span class="reg-status ${done ? "status-completed" : "status-pending"}">${done ? "Completed" : "Pending"}</span></button></div>
+      <div class="reg-actions">
+        <button class="icon-btn receipt-edit" data-id="${r.ID}" title="Edit">${ICON_EDIT}</button>
+        <button class="icon-btn receipt-del del" data-id="${r.ID}" title="Delete">${ICON_TRASH}</button>
+      </div>
+    </div>`;
+}
+
+function renderReceiptList() {
+  let rows = [...(DATA.Receipts || [])];
+  if (searchTerm) {
+    const t = searchTerm.toLowerCase();
+    rows = rows.filter(r => (r["Subject / Particulars"]||"").toLowerCase().includes(t) || (r["Assigned To"]||"").toLowerCase().includes(t));
+  }
+  if (statusFilterVal) rows = rows.filter(r => (r.Status||"Pending") === statusFilterVal);
+  rows.sort((a,b) => {
+    if ((a.Status==="Completed") !== (b.Status==="Completed")) return a.Status==="Completed" ? 1 : -1;
+    return new Date(a["Date of Receipt"]) - new Date(b["Date of Receipt"]);
+  });
+
+  if (!rows.length) {
+    return `<div class="register"><div class="empty"><img class="empty-illustration" src="assets/task_productivity.webp" alt=""><strong>No receipts logged yet</strong>Click "New entry" to log the first one.</div></div>`;
+  }
+  return `<div class="register">
+    <div class="reg-row head task-row"><div></div><div>To be done by</div><div>Particulars</div><div>Status</div><div></div></div>
+    ${rows.map((r,i) => receiptRow(r, i)).join("")}
+  </div>`;
+}
+
+async function toggleReceiptComplete(id) {
+  const r = (DATA.Receipts || []).find(x => x.ID === id);
+  if (!r) return;
+  const nowDone = r.Status !== "Completed";
+  const data = { Status: nowDone ? "Completed" : "Pending" };
+  try {
+    await apiUpdate("Receipts", id, data);
+    Object.assign(r, data);
+    saveSessionCache(DATA);
+    renderNav();
+    document.getElementById("cards") && renderReceiptCards();
+    document.getElementById("content").innerHTML = renderReceiptList();
+    attachReceiptHandlers();
+    showToast(nowDone ? "Receipt marked complete" : "Receipt marked pending");
+  } catch (err) {
+    showToast("Save failed — check connection");
+  }
+}
+
+async function confirmDeleteReceipt(id) {
+  if (!confirm("Delete this receipt entry? This cannot be undone.")) return;
+  await apiDelete("Receipts", id);
+  DATA.Receipts = (DATA.Receipts || []).filter(r => r.ID !== id);
+  saveSessionCache(DATA);
+  renderNav();
+  renderPage();
+  showToast("Receipt deleted");
+}
+
+function attachReceiptHandlers() {
+  document.querySelectorAll(".receipt-complete-btn").forEach(b => b.onclick = (e) => { e.stopPropagation(); toggleReceiptComplete(b.dataset.id); });
+  document.querySelectorAll(".receipt-edit").forEach(b => b.onclick = (e) => { e.stopPropagation(); openReceiptDrawer((DATA.Receipts||[]).find(r => r.ID === b.dataset.id)); });
+  document.querySelectorAll(".receipt-del").forEach(b => b.onclick = (e) => { e.stopPropagation(); confirmDeleteReceipt(b.dataset.id); });
+  const s = document.getElementById("searchInput");
+  const f = document.getElementById("statusFilter");
+  s.value = searchTerm; f.value = statusFilterVal;
+  s.oninput = () => { searchTerm = s.value; document.getElementById("content").innerHTML = renderReceiptList(); attachReceiptHandlers(); };
+  f.onchange = () => { statusFilterVal = f.value; document.getElementById("content").innerHTML = renderReceiptList(); attachReceiptHandlers(); };
+}
+
+function openReceiptDrawer(record) {
+  editingId = record ? record.ID : null;
+  document.getElementById("drawerTitle").textContent = record ? "Edit receipt" : "New receipt";
+  document.getElementById("drawerSub").textContent = "Receipts";
+  const form = document.getElementById("entryForm");
+
+  form.innerHTML = RECEIPT_FIELDS.map(f => {
+    const val = record ? (record[f.key] ?? "") : (f.default || "");
+    let inputHtml;
+    if (f.type === "select") {
+      inputHtml = `<select name="${f.key}">${f.options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join("")}</select>`;
+    } else if (f.type === "textarea") {
+      inputHtml = `<textarea name="${f.key}" ${f.required?'required':''}>${escapeHtml(val)}</textarea>`;
+    } else {
+      inputHtml = `<input type="${f.type}" name="${f.key}" value="${escapeHtml(val)}" ${f.required?'required':''}>`;
+    }
+    const dateHint = f.type === "date" ? "Enter / select date in DD/MM/YYYY format." : "";
+    return `<div class="field" data-fieldkey="${f.key}"><label>${f.label}</label>${inputHtml}${dateHint ? `<div class="hint">${dateHint}</div>` : ""}</div>`;
+  }).join("") + `
+    <div class="drawer-actions">
+      <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+      <button type="submit" class="btn">${record ? "Save changes" : "Add receipt"}</button>
+    </div>`;
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const data = {};
+    RECEIPT_FIELDS.forEach(f => { const el = form.elements[f.key]; data[f.key] = el ? el.value : ""; });
+    try {
+      if (editingId) {
+        await apiUpdate("Receipts", editingId, data);
+        const idx = DATA.Receipts.findIndex(r => r.ID === editingId);
+        DATA.Receipts[idx] = { ...DATA.Receipts[idx], ...data };
+        saveSessionCache(DATA);
+        showToast("Receipt updated");
+      } else {
+        const saved = await apiAdd("Receipts", data);
+        DATA.Receipts = DATA.Receipts || [];
+        DATA.Receipts.push(saved);
+        saveSessionCache(DATA);
+        showToast("Receipt added");
+      }
+      closeDrawer();
+      renderNav();
+      renderPage();
+    } catch (err) {
+      showToast("Save failed — check connection");
+    }
+  };
+  document.getElementById("cancelBtn").onclick = closeDrawer;
+  document.getElementById("overlay").classList.add("open");
+}
+
 function attachRowHandlers() {
   document.querySelectorAll(".reg-row[data-id]").forEach(row => {
     const cat = row.dataset.cat, id = row.dataset.id;
@@ -1735,7 +1921,7 @@ function attachRowHandlers() {
   });
   const s = document.getElementById("searchInput");
   const f = document.getElementById("statusFilter");
-  if (currentTab !== "overview" && currentTab !== "reports" && currentTab !== "tasks") {
+  if (currentTab !== "overview" && currentTab !== "reports" && currentTab !== "tasks" && currentTab !== "receipts") {
     s.value = searchTerm; f.value = statusFilterVal;
     s.oninput = () => { searchTerm = s.value; document.getElementById("content").innerHTML = renderRegister(currentTab); attachRowHandlers(); };
     f.onchange = () => { statusFilterVal = f.value; document.getElementById("content").innerHTML = renderRegister(currentTab); attachRowHandlers(); };
