@@ -557,11 +557,15 @@
 /* ---- Sidebar ---- */
 .sidebar{background:var(--grad-brand) !important;}
 .sidebar-skyline{
-  background-image:url("assets/justice-illustration.webp") !important;
-  height:172px !important;opacity:.9 !important;filter:none !important;
+  height:172px !important;opacity:0 !important;filter:none !important;
   background-size:contain !important;background-position:center bottom !important;background-repeat:no-repeat !important;
   -webkit-mask-image:linear-gradient(to bottom,transparent,rgba(0,0,0,.9) 30%);
   mask-image:linear-gradient(to bottom,transparent,rgba(0,0,0,.9) 30%);
+  transition:opacity .4s ease;
+}
+body.images-ready .sidebar-skyline{
+  background-image:url("assets/justice-illustration.webp") !important;
+  opacity:.9 !important;
 }
 .nav button.active{background:var(--grad-accent) !important;color:#fff !important;box-shadow:0 3px 10px rgba(184,73,46,.3);}
 .nav button.active .nav-icon,.nav button.active .nav-label,.nav button.active .count{color:#fff !important;}
@@ -591,24 +595,33 @@
 }
 .search:focus{border-color:var(--blue) !important;box-shadow:0 0 0 4px var(--blue-soft) !important;}
 
-/* ---- Overview masthead banner (header-banner.webp) ---- */
+/* ---- Overview masthead banner (header-banner.webp) — deferred ---- */
 .greeting-strip{position:relative;}
 .greeting-strip::before{
   content:"";display:block;width:100%;aspect-ratio:985/200;border-radius:var(--radius-lg);
-  background:url("assets/header-banner.webp") center/cover no-repeat;margin-bottom:20px;
+  background:var(--grad-card);margin-bottom:20px;
   box-shadow:var(--shadow-md);border:1px solid var(--border);
+  transition:opacity .4s ease;
+}
+body.images-ready .greeting-strip::before{
+  background:url("assets/header-banner.webp") center/cover no-repeat;
 }
 :root[data-theme="dark"] .greeting-strip::before{opacity:.92;}
 
-/* ---- Subtle tricolor watermark, light mode only ---- */
+/* ---- Subtle tricolor watermark, light mode only — deferred ---- */
 body{
+  background-image:radial-gradient(circle at 88% -4%, var(--bg-accent-a) 0, transparent 34rem) !important;
+  background-repeat:no-repeat !important;
+  background-position:top right !important;
+  background-color:var(--paper) !important;
+}
+body.images-ready{
   background-image:url("assets/bg-tricolor.webp"), radial-gradient(circle at 88% -4%, var(--bg-accent-a) 0, transparent 34rem) !important;
   background-repeat:no-repeat, no-repeat !important;
   background-position:top right, top right !important;
   background-size:400px auto, auto !important;
-  background-color:var(--paper) !important;
 }
-:root[data-theme="dark"] body{
+:root[data-theme="dark"] body.images-ready{
   background-image:radial-gradient(circle at 88% -4%, var(--bg-accent-a) 0, transparent 34rem) !important;
 }
 
@@ -1244,7 +1257,7 @@ async function boot() {
   if (!DEMO_MODE) { renderNav(); renderPage(); }
   // Cached data is already on screen, so there's nothing to wait on —
   // dismiss the big loading animation now rather than blocking the UI.
-  if (cached || DEMO_MODE) overlay.classList.add("hide");
+  if (cached || DEMO_MODE) { overlay.classList.add("hide"); document.body.classList.add("images-ready"); }
   try {
     DATA = await apiList();
     saveSessionCache(DATA);
@@ -1264,6 +1277,7 @@ async function boot() {
     showToast("Could not reach the API — check CONFIG.API_URL");
   } finally {
     overlay.classList.add("hide");
+    document.body.classList.add("images-ready");
   }
 }
 
