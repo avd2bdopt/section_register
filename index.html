@@ -2277,14 +2277,20 @@ function buildCategorySummaryTable(cat, rows) {
   const buckets = {}; config.buckets.forEach(b => buckets[b] = []);
   rows.forEach(r => { const b = config.bucketFn(r); if (b && buckets[b]) buckets[b].push(r); });
   const total = config.buckets.reduce((s, b) => s + buckets[b].length, 0);
+  const completedCount = rows.length - total;
   const accent = CAT_COLORS[cat] || "#333A4A";
 
   let html = `<div class="cat-block-heading" style="background:${accent};">${SCHEMAS[cat].label} — Present Status</div>`;
+  html += `<table class="report-summary-table"><tbody>`;
+  html += `<tr><td>Total Cases</td><td><span class="report-count-badge" style="background:${accent}">${String(rows.length).padStart(2, "0")}</span></td></tr>`;
+  html += `<tr><td>Completed</td><td><span class="report-count-badge" style="background:${REPORT_BUCKET_COLORS.DoLA}">${String(completedCount).padStart(2, "0")}</span></td></tr>`;
+  html += `<tr class="total-row"><td>Pending</td><td><span class="report-count-badge total">${String(total).padStart(2, "0")}</span></td></tr>`;
+  html += `</tbody></table>`;
+
   html += `<table class="report-summary-table"><thead><tr><th>Pending With</th><th>Number</th></tr></thead><tbody>`;
   config.buckets.forEach(b => {
     html += `<tr><td>${config.labels[b]}</td><td><span class="report-count-badge" style="background:${REPORT_BUCKET_COLORS[b]||'#333A4A'}">${String(buckets[b].length).padStart(2, "0")}</span></td></tr>`;
   });
-  html += `<tr class="total-row"><td>Total ${SCHEMAS[cat].label}</td><td><span class="report-count-badge total">${String(total).padStart(2, "0")}</span></td></tr>`;
   html += `</tbody></table>`;
   return { html, buckets, total };
 }
