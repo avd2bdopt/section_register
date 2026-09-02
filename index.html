@@ -99,7 +99,7 @@
     background:#fff;color:var(--slate);
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--slate);-webkit-font-smoothing:antialiased;transition:background .2s ease, color .2s ease;}
+  body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--slate);-webkit-font-smoothing:antialiased;transition:background .2s ease, color .2s ease;overflow-x:hidden;}
   body{background:radial-gradient(circle at 88% -4%, var(--bg-accent-a) 0, transparent 34rem),var(--paper);}
   @supports (padding: max(0px)){
     .sidebar{padding-top:max(26px, env(safe-area-inset-top));padding-left:max(18px, env(safe-area-inset-left));}
@@ -211,6 +211,7 @@
 
   /* ---------- Summary cards ---------- */
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .cards > *{min-width:0;}
   .card{
     background:var(--paper-raised);border:1px solid var(--border);border-radius:var(--radius-md);
     padding:17px 18px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
@@ -262,6 +263,7 @@
 
   /* ---------- Charts ---------- */
   .charts-row{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-bottom:24px;}
+  .charts-row > *{min-width:0;}
   .chart-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:17px 18px;box-shadow:var(--shadow-sm);}
   .chart-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-light);font-weight:600;margin-bottom:12px;}
   .chart-body{display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
@@ -462,6 +464,29 @@
   .report-bucket-section .report-cat-title{border-bottom-width:3px;}
 
   /* ---------- Toast ---------- */
+  /* ---------- Loading overlay ---------- */
+  .loading-overlay{
+    position:fixed;inset:0;z-index:200;background:var(--ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    transition:opacity .35s ease, visibility .35s ease;
+  }
+  .loading-overlay.hide{opacity:0;visibility:hidden;pointer-events:none;}
+  .loading-mark{
+    width:56px;height:56px;border-radius:14px;background:linear-gradient(145deg,#2A3E66,#18274A);
+    display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:22px;
+    color:#EDE9DD;border:1px solid rgba(255,255,255,.14);box-shadow:0 8px 24px rgba(0,0,0,.3);
+  }
+  .loading-ring{position:relative;width:52px;height:52px;}
+  .loading-ring span{
+    position:absolute;inset:0;border-radius:50%;border:3px solid transparent;
+    border-top-color:var(--rust);animation:loading-spin 1.1s linear infinite;
+  }
+  .loading-ring span:nth-child(2){border-top-color:#E7E5DC;opacity:.55;animation-duration:1.6s;animation-direction:reverse;}
+  .loading-ring span:nth-child(3){border-top-color:var(--amber);opacity:.4;animation-duration:2.1s;}
+  @keyframes loading-spin{to{transform:rotate(360deg);}}
+  .loading-text{font-family:var(--serif);font-size:17px;color:#F5F2EA;font-weight:600;}
+  .loading-sub{font-family:var(--mono);font-size:11.5px;color:#9AA5C2;letter-spacing:.03em;margin-top:-10px;}
+
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--brand-navy);color:#F5F2EA;
     padding:11px 20px;border-radius:var(--radius-sm);font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:100;box-shadow:var(--shadow-lg);
@@ -495,6 +520,13 @@
 
 </head>
 <body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-mark">AB</div>
+  <div class="loading-ring"><span></span><span></span><span></span></div>
+  <div class="loading-text">Loading your case register…</div>
+  <div class="loading-sub">Connecting to Google Sheets</div>
+</div>
 
 <div class="app" id="appRoot">
   <aside class="sidebar">
@@ -1080,6 +1112,8 @@ let categoryDrilldown = { active: false, bucket: "" };
 async function boot() {
   const dot = document.getElementById("apiDot");
   const statusText = document.getElementById("apiStatusText");
+  const overlay = document.getElementById("loadingOverlay");
+  setTimeout(() => overlay.classList.add("hide"), 15000);
   const cached = DEMO_MODE ? null : readSessionCache();
   if (DEMO_MODE) {
     statusText.textContent = "Demo mode — no Sheet connected";
@@ -1097,6 +1131,9 @@ async function boot() {
     DATA = {}; CATS.forEach(c => DATA[c] = []); DATA.Tasks = [];
   }
   if (!DEMO_MODE) { renderNav(); renderPage(); }
+  // Cached data is already on screen, so there's nothing to wait on —
+  // dismiss the big loading animation now rather than blocking the UI.
+  if (cached || DEMO_MODE) overlay.classList.add("hide");
   try {
     DATA = await apiList();
     saveSessionCache(DATA);
@@ -1114,6 +1151,8 @@ async function boot() {
       renderPage();
     }
     showToast("Could not reach the API — check CONFIG.API_URL");
+  } finally {
+    overlay.classList.add("hide");
   }
 }
 
