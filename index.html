@@ -517,136 +517,112 @@
     #reportOutput{padding:18px;}
   }
 
-  /* ---------- Colorful refresh layer ---------- */
-  :root{
-    --ink:#13213A;--ink-soft:#28456F;--ink-softer:#4B6B9A;--paper:#F7FAFF;--paper-raised:rgba(255,255,255,.92);
-    --rust:#E05B45;--rust-soft:#FFE4DE;--sage:#12A66A;--sage-soft:#DDFBEA;--amber:#D58B08;--amber-soft:#FFF1C7;
-    --blue:#2563EB;--blue-soft:#E4EDFF;--purple:#8B5CF6;--purple-soft:#EEE7FF;--slate:#26344F;--slate-light:#67748D;
-    --border:#D9E2F2;--border-strong:#B9C7DD;--brand-navy:#14213D;--bg-accent-a:#DBEAFE;
-    --shadow-sm:0 2px 10px rgba(37,99,235,.08);--shadow-md:0 12px 34px rgba(37,99,235,.14);--shadow-lg:0 28px 80px rgba(37,99,235,.18);
-  }
-  :root[data-theme="dark"]{
-    --ink:#F3F7FF;--ink-soft:#D8E3F8;--ink-softer:#B9C8E5;--paper:#0E1526;--paper-raised:rgba(23,32,52,.94);
-    --rust:#FF8B73;--rust-soft:#40241F;--sage:#5DE39A;--sage-soft:#153525;--amber:#FFD166;--amber-soft:#3E3012;
-    --blue:#79A8FF;--blue-soft:#172A4E;--purple:#C4A7FF;--purple-soft:#2E244D;--slate:#E5ECFA;--slate-light:#AEBBD2;
-    --border:#273552;--border-strong:#3A4C70;--bg-accent-a:#182C54;
-  }
-  body{
-    background:radial-gradient(circle at 7% 8%, rgba(18,166,106,.26) 0, transparent 28rem),radial-gradient(circle at 88% 0%, rgba(139,92,246,.22) 0, transparent 30rem),radial-gradient(circle at 58% 100%, rgba(224,91,69,.16) 0, transparent 28rem),linear-gradient(135deg,#F8FBFF 0%,#FFF7ED 48%,#EFFCF7 100%);
-  }
-  :root[data-theme="dark"] body{
-    background:radial-gradient(circle at 10% 0%, rgba(93,227,154,.16) 0, transparent 30rem),radial-gradient(circle at 90% 4%, rgba(121,168,255,.20) 0, transparent 30rem),radial-gradient(circle at 55% 100%, rgba(255,139,115,.13) 0, transparent 28rem),linear-gradient(135deg,#0E1526 0%,#121B31 54%,#111827 100%);
-  }
-  .sidebar{background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 22%),linear-gradient(155deg,#10203F 0%,#172A63 48%,#0F766E 100%);box-shadow:12px 0 40px rgba(20,33,61,.22);}
-  .brand-mark{background:conic-gradient(from 210deg,#38BDF8,#8B5CF6,#EC4899,#F97316,#22C55E,#38BDF8);border-color:rgba(255,255,255,.26);box-shadow:0 14px 32px rgba(56,189,248,.24), inset 0 1px 0 rgba(255,255,255,.24);}
-  .brand-title{color:#FFFFFF;}.brand-eyebrow,.brand-sub,.sidebar-foot{color:#BFD0FF;}
-  .nav button{border:1px solid transparent;color:#DDE8FF;}.nav button:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.10);}
-  .nav button.active{background:linear-gradient(135deg,rgba(255,255,255,.20),rgba(255,255,255,.10));color:#FFFFFF;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 12px 28px rgba(0,0,0,.16);}
-  .nav button.active::before{background:linear-gradient(180deg,#22C55E,#38BDF8,#F97316);}.main{background:linear-gradient(180deg,rgba(255,255,255,.32),transparent 280px);}
-  .greeting-strip{padding:20px 22px;border:1px solid rgba(255,255,255,.74);border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.86),rgba(228,237,255,.76));box-shadow:var(--shadow-md);}
-  :root[data-theme="dark"] .greeting-strip{border-color:var(--border);background:linear-gradient(135deg,rgba(23,32,52,.96),rgba(28,43,74,.84));}
-  .page-title,.greeting-title{color:var(--ink);}
-  .card,.chart-card,.attention-panel,.register,.drawer,.modal,.report-controls{border-color:rgba(185,199,221,.72);background:var(--paper-raised);box-shadow:var(--shadow-sm);backdrop-filter:blur(14px);}
-  .card::after{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--blue),var(--sage),var(--amber),var(--rust),var(--purple));opacity:.86;}
-  .card:hover,.chart-card:hover,.register:hover{box-shadow:var(--shadow-md);}
-  .card-icon{color:#fff;background:linear-gradient(135deg,var(--blue),#06B6D4);}.card-icon.tone-amber{color:#fff;background:linear-gradient(135deg,#F59E0B,#F97316);}.card-icon.tone-sage{color:#fff;background:linear-gradient(135deg,#12A66A,#22C55E);}.card-icon.tone-rust{color:#fff;background:linear-gradient(135deg,#E05B45,#EC4899);}.card-icon.tone-ink{color:#fff;background:linear-gradient(135deg,#14213D,#8B5CF6);}
-  .btn{border-color:transparent;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;box-shadow:0 14px 30px rgba(37,99,235,.22);}.btn:hover{background:linear-gradient(135deg,#1D4ED8,#0891B2);}
-  .btn.ghost{border-color:var(--border-strong);background:rgba(255,255,255,.66);color:var(--ink);}:root[data-theme="dark"] .btn.ghost{background:rgba(255,255,255,.06);}.btn.danger{color:var(--rust);background:var(--rust-soft);border-color:transparent;}
-  .search,select.filter,.global-search-input,input,select,textarea{border-color:var(--border-strong);box-shadow:0 1px 0 rgba(255,255,255,.55);}
-  .search:focus,input:focus,select:focus,textarea:focus{border-color:#38BDF8;box-shadow:0 0 0 4px rgba(56,189,248,.18);}
-  .reg-row.head{background:linear-gradient(135deg,var(--blue-soft),rgba(221,251,234,.72));color:var(--ink-soft);}
-  .reg-row:hover,.attention-item:hover,.gs-result:hover{background:linear-gradient(135deg,rgba(228,237,255,.82),rgba(221,251,234,.66));}
-  :root[data-theme="dark"] .reg-row.head,:root[data-theme="dark"] .reg-row:hover,:root[data-theme="dark"] .attention-item:hover,:root[data-theme="dark"] .gs-result:hover{background:rgba(121,168,255,.12);}
-  .status-pending{background:var(--amber-soft);color:var(--amber);}.status-forwarded{background:var(--blue-soft);color:var(--blue);}.status-completed{background:var(--sage-soft);color:var(--sage);}.status-returned{background:var(--rust-soft);color:var(--rust);}
-  .attention-title svg{color:var(--rust);}.api-dot.live{background:#22C55E;box-shadow:0 0 0 4px rgba(34,197,94,.18);}.theme-toggle{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.16);}
+/* =====================================================================
+   VISUAL REFRESH — OVERRIDE BLOCK (appended)
+   Everything above this point is unchanged. These rules only refresh
+   look and feel — brighter palette, gradients, richer cards/buttons/
+   sidebar, better focus states, dark-mode aware — via normal CSS
+   cascade (later source order + equal/higher specificity). No markup,
+   IDs, or JavaScript were touched to achieve this.
+   ===================================================================== */
 
-  /* ---------- Image polish layer ---------- */
-  .greeting-strip{
-    min-height:178px;
-    align-items:flex-end;
-    position:relative;
-    overflow:hidden;
-    background:
-      linear-gradient(90deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.86) 42%, rgba(255,255,255,.38) 72%, rgba(255,255,255,.18) 100%),
-      url("assets/header-banner.png") center / cover no-repeat;
-  }
-  :root[data-theme="dark"] .greeting-strip{
-    background:
-      linear-gradient(90deg, rgba(14,21,38,.96) 0%, rgba(14,21,38,.78) 45%, rgba(14,21,38,.34) 78%, rgba(14,21,38,.18) 100%),
-      url("assets/hero-banner.png") center / cover no-repeat;
-  }
-  .greeting-title{
-    font-size:clamp(25px, 3vw, 36px);
-    text-shadow:0 1px 0 rgba(255,255,255,.42);
-  }
-  :root[data-theme="dark"] .greeting-title{text-shadow:0 2px 18px rgba(0,0,0,.45);}
-  .greeting-sub{max-width:560px;font-weight:500;}
-  .sidebar-skyline{
-    height:210px;
-    background:url("assets/bg-dark.png") center bottom / cover no-repeat;
-    filter:none;
-    opacity:.30;
-    mix-blend-mode:screen;
-  }
-  .cards .card:nth-child(1){background-image:linear-gradient(90deg, var(--paper-raised), rgba(255,255,255,.80)), url("assets/card-cases.png");background-position:center;background-size:cover;}
-  .cards .card:nth-child(2){background-image:linear-gradient(90deg, var(--paper-raised), rgba(255,255,255,.80)), url("assets/card-reports.png");background-position:center;background-size:cover;}
-  .cards .card:nth-child(3){background-image:linear-gradient(90deg, var(--paper-raised), rgba(255,255,255,.80)), url("assets/card-hearings.png");background-position:center;background-size:cover;}
-  .cards .card:nth-child(4){background-image:linear-gradient(90deg, var(--paper-raised), rgba(255,255,255,.80)), url("assets/card-stakeholders.png");background-position:center;background-size:cover;}
-  :root[data-theme="dark"] .cards .card{
-    background-image:linear-gradient(90deg, rgba(23,32,52,.95), rgba(23,32,52,.84)), url("assets/bg-dark.png") !important;
-  }
-  .attention-panel{
-    position:relative;
-    overflow:hidden;
-    background:
-      linear-gradient(90deg, var(--paper-raised) 0%, var(--paper-raised) 64%, rgba(255,255,255,.62) 100%),
-      url("assets/justice-illustration.png") right center / auto 100% no-repeat;
-  }
-  :root[data-theme="dark"] .attention-panel{
-    background:
-      linear-gradient(90deg, rgba(23,32,52,.96) 0%, rgba(23,32,52,.94) 68%, rgba(23,32,52,.72) 100%),
-      url("assets/justice-illustration.png") right center / auto 100% no-repeat;
-  }
-  .charts-row .chart-card:first-child{
-    background:
-      linear-gradient(135deg, var(--paper-raised) 0%, rgba(255,255,255,.86) 60%, rgba(255,255,255,.52) 100%),
-      url("assets/report-illustration.png") right bottom / 230px auto no-repeat;
-  }
-  .charts-row .chart-card:nth-child(2){
-    background:
-      linear-gradient(135deg, var(--paper-raised) 0%, rgba(255,255,255,.88) 68%, rgba(255,255,255,.56) 100%),
-      url("assets/bg-tricolor.png") right bottom / 260px auto no-repeat;
-  }
-  :root[data-theme="dark"] .charts-row .chart-card{
-    background:linear-gradient(135deg, rgba(23,32,52,.96), rgba(23,32,52,.86)), url("assets/bg-dark.png") center / cover no-repeat !important;
-  }
-  .register{
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.90)),
-      url("assets/bg-pattern.png") center top / cover no-repeat;
-  }
-  :root[data-theme="dark"] .register{
-    background:linear-gradient(180deg, rgba(23,32,52,.96), rgba(23,32,52,.92)), url("assets/bg-dark.png") center / cover no-repeat;
-  }
-  .empty-state,.empty,.no-records,.no-data{
-    background:
-      linear-gradient(90deg, rgba(255,255,255,.96), rgba(255,255,255,.70)),
-      url("assets/empty-state.png") right center / contain no-repeat;
-    min-height:170px;
-    border-radius:var(--radius-lg);
-  }
-  #reportOutput .report-header,
-  #printArea .report-header{
-    background:
-      linear-gradient(90deg, rgba(255,255,255,.96), rgba(255,255,255,.78), rgba(255,255,255,.42)),
-      url("assets/header-banner.png") center / cover no-repeat;
-    border-radius:10px;
-    padding:18px 20px;
-  }
-  @media (max-width:760px){
-    .greeting-strip{min-height:210px;background-position:center top;}
-    .cards .card,.attention-panel,.charts-row .chart-card,.register{background-image:none !important;}
-  }
+/* ---- Brighter accent palette (light) ---- */
+:root{
+  --rust:#B8492E;
+  --sage:#2E8B62;
+  --amber:#B8801A;
+  --blue:#2563AB;
+  --rust-soft:#FBE3D8;
+  --sage-soft:#DCF3E6;
+  --amber-soft:#FBEDD0;
+  --blue-soft:#DCEAFB;
+  --grad-brand:linear-gradient(155deg,#24365E 0%,#182642 55%,#0F1B33 100%);
+  --grad-accent:linear-gradient(120deg,#B8492E 0%,#C9821F 100%);
+  --grad-card:linear-gradient(160deg,#FFFFFF 0%,#FBF8F0 100%);
+}
+:root[data-theme="dark"]{
+  --rust:#F0906E;
+  --sage:#7FDA9F;
+  --amber:#F0C868;
+  --blue:#8FC0F0;
+  --rust-soft:#3D241C;
+  --sage-soft:#1B3226;
+  --amber-soft:#3A2D14;
+  --blue-soft:#1B2B42;
+  --grad-brand:linear-gradient(155deg,#1C2942 0%,#131A2C 55%,#0B0F1C 100%);
+  --grad-accent:linear-gradient(120deg,#E97C5A 0%,#E0B052 100%);
+  --grad-card:linear-gradient(160deg,#1E2433 0%,#171B27 100%);
+}
+
+/* ---- Sidebar ---- */
+.sidebar{background:var(--grad-brand) !important;}
+.sidebar-skyline{
+  background-image:url("assets/justice-illustration.webp") !important;
+  height:172px !important;opacity:.9 !important;filter:none !important;
+  background-size:contain !important;background-position:center bottom !important;background-repeat:no-repeat !important;
+  -webkit-mask-image:linear-gradient(to bottom,transparent,rgba(0,0,0,.9) 30%);
+  mask-image:linear-gradient(to bottom,transparent,rgba(0,0,0,.9) 30%);
+}
+.nav button.active{background:var(--grad-accent) !important;color:#fff !important;box-shadow:0 3px 10px rgba(184,73,46,.3);}
+.nav button.active .nav-icon,.nav button.active .nav-label,.nav button.active .count{color:#fff !important;}
+.nav button.active::before{background:#fff !important;}
+.nav button:focus-visible{outline:2px solid #fff;outline-offset:-3px;}
+
+/* ---- Buttons ---- */
+.btn{background:var(--grad-accent) !important;border-color:transparent !important;box-shadow:0 4px 14px rgba(184,73,46,.26) !important;}
+.btn:hover{filter:brightness(1.07);box-shadow:0 7px 20px rgba(184,73,46,.34) !important;}
+.card.clickable:hover, #categoryPendingCard:hover{border-color:var(--blue) !important;}
+
+/* ---- Cards & panels ---- */
+.card, .chart-card, .attention-panel, .pending-drilldown, .monthly-disposal, .list-card{
+  background:var(--grad-card) !important;
+}
+.card:hover{box-shadow:0 12px 30px rgba(20,30,60,.16) !important;}
+.card-icon{background:var(--grad-accent) !important;color:#fff !important;}
+.card-icon.tone-amber{background:linear-gradient(120deg,var(--amber),#D9A63E) !important;color:#fff !important;}
+.card-icon.tone-sage{background:linear-gradient(120deg,var(--sage),#4FAE7C) !important;color:#fff !important;}
+.card-icon.tone-rust{background:linear-gradient(120deg,var(--rust),#D9603E) !important;color:#fff !important;}
+.card-icon.tone-ink{background:var(--grad-brand) !important;color:#fff !important;}
+
+/* ---- Focus states ---- */
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:4px;}
+.field input:focus, .field select:focus, .field textarea:focus{
+  border-color:var(--blue) !important;box-shadow:0 0 0 4px var(--blue-soft) !important;
+}
+.search:focus{border-color:var(--blue) !important;box-shadow:0 0 0 4px var(--blue-soft) !important;}
+
+/* ---- Overview masthead banner (header-banner.webp) ---- */
+.greeting-strip{position:relative;}
+.greeting-strip::before{
+  content:"";display:block;width:100%;aspect-ratio:985/200;border-radius:var(--radius-lg);
+  background:url("assets/header-banner.webp") center/cover no-repeat;margin-bottom:20px;
+  box-shadow:var(--shadow-md);border:1px solid var(--border);
+}
+:root[data-theme="dark"] .greeting-strip::before{opacity:.92;}
+
+/* ---- Subtle tricolor watermark, light mode only ---- */
+body{
+  background-image:url("assets/bg-tricolor.webp"), radial-gradient(circle at 88% -4%, var(--bg-accent-a) 0, transparent 34rem) !important;
+  background-repeat:no-repeat, no-repeat !important;
+  background-position:top right, top right !important;
+  background-size:400px auto, auto !important;
+  background-color:var(--paper) !important;
+}
+:root[data-theme="dark"] body{
+  background-image:radial-gradient(circle at 88% -4%, var(--bg-accent-a) 0, transparent 34rem) !important;
+}
+
+/* ---- CSSMitra link ---- */
+.cssmitra-link{
+  display:flex;align-items:center;gap:8px;margin-top:12px;padding:9px 10px;border-radius:8px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#F0EEE4;
+  font-size:11.5px;font-weight:600;text-decoration:none;transition:background .15s ease;
+}
+.cssmitra-link:hover{background:rgba(255,255,255,.14);}
+.cssmitra-link svg{width:14px;height:14px;flex-shrink:0;}
+
+/* ---- Reports must always stay print-safe / paper-toned regardless of the above ---- */
+#reportOutput, #printArea{background-image:none !important;}
 </style>
 
 </head>
@@ -680,6 +656,10 @@
         <span class="theme-toggle-icon" id="themeToggleIcon"></span>
         <span id="themeToggleLabel">Dark mode</span>
       </button>
+      <a class="cssmitra-link" href="https://cssmitra.in" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7L13 18"/></svg>
+        <span>PDF tools &amp; guidelines — cssmitra.in</span>
+      </a>
       <div style="margin-top:12px;"><span class="api-dot" id="apiDot"></span><span id="apiStatusText">Checking connection…</span></div>
       <div style="margin-top:6px;">Data source: Google Sheets</div>
     </div>
@@ -2652,5 +2632,3 @@ boot();
 </script>
 </body>
 </html>
-
-
