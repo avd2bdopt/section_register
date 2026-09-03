@@ -21,11 +21,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://script.google.com">
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#1A2740;
@@ -727,15 +723,6 @@ body.images-ready{
 const CONFIG = {
   API_URL: "https://script.google.com/macros/s/AKfycbzLVIrTIpN7YT2Dsk18HPUwk1Huwl3tu91o5Q2RD4rs5KukLer7SkRJvOdDnRKud2Xn/exec" // e.g. "https://script.google.com/macros/s/AKfycb.../exec"
 };
-
-// Start the network request the instant we know the URL — this runs
-// before any of the rest of this (large) script has even finished
-// parsing, so the request is in flight the whole time the browser is
-// still setting up the page. On a slow mobile connection this overlap
-// is the single biggest lever for perceived load time.
-let _earlyListPromise = CONFIG.API_URL
-  ? fetch(CONFIG.API_URL + "?action=list").then(r => r.json()).catch(err => ({ __earlyError: String(err) }))
-  : null;
 
 /* ---------------------------------------------------------------------
    Schema — defines fields, form inputs, and table columns per category.
