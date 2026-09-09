@@ -21,7 +21,11 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"></noscript>
 <style>
   :root{
     --ink:#1A2740;
@@ -644,8 +648,8 @@ body.images-ready{
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-mark">AB</div>
   <div class="loading-ring"><span></span><span></span><span></span></div>
-  <div class="loading-text">Loading your case register…</div>
-  <div class="loading-sub">Connecting to Google Sheets</div>
+  <div class="loading-text" id="loadingText">Loading your case register…</div>
+  <div class="loading-sub" id="loadingSub">Connecting to Google Sheets</div>
 </div>
 
 <div class="app" id="appRoot">
@@ -723,6 +727,15 @@ body.images-ready{
 const CONFIG = {
   API_URL: "https://script.google.com/macros/s/AKfycbzLVIrTIpN7YT2Dsk18HPUwk1Huwl3tu91o5Q2RD4rs5KukLer7SkRJvOdDnRKud2Xn/exec" // e.g. "https://script.google.com/macros/s/AKfycb.../exec"
 };
+
+// Start the network request the instant we know the URL — this runs
+// before any of the rest of this (large) script has even finished
+// parsing, so the request is in flight the whole time the browser is
+// still setting up the page. On a slow mobile connection this overlap
+// is the single biggest lever for perceived load time.
+let _earlyListPromise = CONFIG.API_URL
+  ? fetch(CONFIG.API_URL + "?action=list").then(r => r.json()).catch(err => ({ __earlyError: String(err) }))
+  : null;
 
 /* ---------------------------------------------------------------------
    Schema — defines fields, form inputs, and table columns per category.
@@ -880,6 +893,7 @@ function isCompleted(cat, r) {
   if (COMPLETED_LITIGATION_CATEGORIES.includes(cat)) return r.Status === "Communicated to CBI";
   if (cat === "Disciplinary") return r.Stage === "Final Order issued with the approval of DA";
   if (cat === "Suspension") return r.Status === "Revoked" || r.Status === "Reinstated";
+  if (cat === "SanctionProsecution") return r.Status === "Sanction Granted" || r.Status === "Sanction Declined";
   return r.Status === "Completed";
 }
 function disposalDate(cat, r) {
@@ -1047,10 +1061,28 @@ const SCHEMAS = {
       { key: "Remarks", label: "Remarks", type: "textarea" },
       { key: "Case Timeline", label: "Case timeline", type: "textarea", hint: "One event per line: DD/MM/YYYY | Event | optional note. Log each review/extension here — e.g. '25/11/2024 | 1st review — extended | Valid upto 30/05/2025 (180 days), CBI recommendation dated 20/11/2024'." }
     ]
+  },
+  SanctionProsecution: {
+    label: "Sanction of Prosecution",
+    desc: "Cases where an agency has sought sanction to prosecute an officer.",
+    statusOptions: ["Received and under process", "Referred to CO for comments", "Referred for Legal Opinion", "Sanction Granted", "Sanction Declined", "Returned"],
+    statusQuickFields: ["Status", "SoP Sought By", "Present Status"],
+    fields: [
+      { key: "Date of Receipt", label: "Date of receipt", type: "date", required: true },
+      { key: "SoP Sought By", label: "SoP sought by", type: "text", required: true, hint: "The agency requesting sanction — e.g. CBI, ED, Income Tax Department." },
+      { key: "Name & Designation of Officer", label: "Name & designation of officer", type: "text" },
+      { key: "File No", label: "File no.", type: "text" },
+      { key: "Computer No", label: "Computer no.", type: "text" },
+      { key: "Subject", label: "Grounds / brief facts", type: "textarea", required: true },
+      { key: "Status", label: "Status", type: "select", options: ["Received and under process", "Referred to CO for comments", "Referred for Legal Opinion", "Sanction Granted", "Sanction Declined", "Returned"], default: "Received and under process" },
+      { key: "Present Status", label: "Present status (narrative)", type: "textarea" },
+      { key: "Remarks", label: "Remarks", type: "textarea" },
+      { key: "Case Timeline", label: "Case timeline", type: "textarea", hint: "One event per line: DD/MM/YYYY | Event | optional note." }
+    ]
   }
 };
 const CATS = Object.keys(SCHEMAS);
-const CAT_COLORS = { SLP: "#1C2B4A", Appeals: "#4A6B54", Withdrawal: "#93691E", Disciplinary: "#8C3B2E", Suspension: "#6B4C93" };
+const CAT_COLORS = { SLP: "#1C2B4A", Appeals: "#4A6B54", Withdrawal: "#93691E", Disciplinary: "#8C3B2E", Suspension: "#6B4C93", SanctionProsecution: "#1F7A72" };
 const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
@@ -1062,6 +1094,7 @@ const NAV_ICONS = {
   Withdrawal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>',
   Disciplinary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3 7.5 8 9 5-1.5 8-4.5 8-9V6Z"/><path d="m9.5 12 1.8 1.8L15 10"/></svg>',
   Suspension: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9v6M15 9v6"/></svg>',
+  SanctionProsecution: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="m8.5 12.5-1.5 8 5-3 5 3-1.5-8"/></svg>',
   tasks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
   receipts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16v18l-3-2-2.5 2-2.5-2-2.5 2L7 19l-3 2Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
   reports: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>'
@@ -1170,6 +1203,14 @@ function saveSessionCache(data) {
 
 async function apiList() {
   if (DEMO_MODE) return demoStore();
+  if (_earlyListPromise) {
+    const p = _earlyListPromise;
+    _earlyListPromise = null; // consume once; any later call fetches fresh
+    const json = await p;
+    if (json && json.__earlyError) throw new Error(json.__earlyError);
+    if (!json || !json.ok) throw new Error((json && json.error) || "Failed to load");
+    return json.data;
+  }
   const res = await fetch(CONFIG.API_URL + "?action=list");
   const json = await res.json();
   if (!json.ok) throw new Error(json.error || "Failed to load");
@@ -1230,6 +1271,7 @@ let currentTab = "overview";
 let editingId = null;
 let searchTerm = "";
 let statusFilterVal = "";
+let globalSearchQuery = "";
 let overviewDrilldown = { mode: "", category: "", bucket: "", via: "" };
 let categoryDrilldown = { active: false, bucket: "" };
 
@@ -1237,8 +1279,32 @@ async function boot() {
   const dot = document.getElementById("apiDot");
   const statusText = document.getElementById("apiStatusText");
   const overlay = document.getElementById("loadingOverlay");
-  setTimeout(() => overlay.classList.add("hide"), 15000);
+  const overlayText = document.getElementById("loadingText");
+  const overlaySub = document.getElementById("loadingSub");
   const cached = DEMO_MODE ? null : readSessionCache();
+
+  let slowTimers = [];
+  function clearSlowTimers() { slowTimers.forEach(t => clearTimeout(t)); slowTimers = []; }
+  if (!cached && !DEMO_MODE) {
+    // Google Apps Script can take anywhere from ~2 seconds to over a
+    // minute to respond, depending on whether it's "warm" (recently
+    // used) or "cold" (idle for a while) — this is normal for Apps
+    // Script, not a bug. Rather than hiding the loading screen on a
+    // fixed timer (which previously left a confusing all-zeros page
+    // behind on a slow/cold load), keep it up and explain what's
+    // happening so it never looks stuck or broken.
+    slowTimers.push(setTimeout(() => {
+      overlaySub.textContent = "Still connecting — this can take a little longer than usual";
+    }, 6000));
+    slowTimers.push(setTimeout(() => {
+      overlayText.textContent = "Google Sheets is waking up…";
+      overlaySub.textContent = "First request of the session can take up to a minute — still working, please wait";
+    }, 15000));
+    slowTimers.push(setTimeout(() => {
+      overlaySub.textContent = "Still trying — if this continues for more than 2 minutes, try reloading the page";
+    }, 45000));
+  }
+
   if (DEMO_MODE) {
     statusText.textContent = "Demo mode — no Sheet connected";
   } else {
@@ -1276,6 +1342,7 @@ async function boot() {
     }
     showToast("Could not reach the API — check CONFIG.API_URL");
   } finally {
+    clearSlowTimers();
     overlay.classList.add("hide");
     document.body.classList.add("images-ready");
   }
@@ -1285,55 +1352,51 @@ async function boot() {
    Global search — searches every field of every record across all
    case categories (not Tasks). Live as you type, minimum 3 characters.
    --------------------------------------------------------------------- */
+function performGlobalSearch(query) {
+  const q = query.trim().toLowerCase();
+  if (q.length < 3) return [];
+  const matches = [];
+  CATS.forEach(cat => {
+    (DATA[cat] || []).forEach(record => {
+      const haystack = Object.values(record).filter(v => v !== null && v !== undefined).join(" \u0001 ").toLowerCase();
+      if (haystack.includes(q)) matches.push({ cat, record });
+    });
+  });
+  return matches;
+}
+function renderSearchResultsPage() {
+  const matches = performGlobalSearch(globalSearchQuery);
+  if (globalSearchQuery.trim().length < 3) {
+    return `<div class="register"><div class="empty"><strong>Keep typing…</strong>Type at least 3 characters to search across every case.</div></div>`;
+  }
+  if (!matches.length) {
+    return `<div class="register"><div class="empty"><strong>No matches</strong>No case in any category matches "${escapeHtml(globalSearchQuery.trim())}".</div></div>`;
+  }
+  return `<div class="register">
+    <div class="reg-row head"><div></div><div>Aging</div><div>Subject</div><div>File No.</div><div>Computer No.</div><div>Status</div><div></div></div>
+    ${matches.map(({ cat, record }, i) => registerRow(cat, record, i)).join("")}
+  </div>`;
+}
 function initGlobalSearch() {
   const input = document.getElementById("globalSearchInput");
-  const results = document.getElementById("globalSearchResults");
-  if (!input || !results) return;
+  if (!input) return;
 
-  function renderResults(query) {
-    const q = query.trim().toLowerCase();
-    if (q.length < 3) {
-      results.innerHTML = `<div class="gs-hint">Type at least 3 characters…</div>`;
-      results.classList.add("open");
-      return;
+  function runSearch(query) {
+    globalSearchQuery = query;
+    if (query.trim().length >= 3) {
+      currentTab = "search";
+      renderNav();
+      renderPage();
+    } else if (currentTab === "search") {
+      currentTab = "overview";
+      renderNav();
+      renderPage();
     }
-    const matches = [];
-    CATS.forEach(cat => {
-      (DATA[cat] || []).forEach(record => {
-        const haystack = Object.values(record).filter(v => v !== null && v !== undefined).join(" \u0001 ").toLowerCase();
-        if (haystack.includes(q)) matches.push({ cat, record });
-      });
-    });
-    if (!matches.length) {
-      results.innerHTML = `<div class="gs-empty">No cases match "${escapeHtml(query.trim())}".</div>`;
-      results.classList.add("open");
-      return;
-    }
-    const shown = matches.slice(0, 25);
-    results.innerHTML = shown.map(({ cat, record }, i) => {
-      const title = record.Subject || record["Name & Designation of Delinquent"] || record["Name & Designation of Officer"] || record.Task || "(no subject)";
-      const metaBits = [];
-      if (record["File No"]) metaBits.push("File No. " + record["File No"]);
-      if (record["Computer No"]) metaBits.push("Computer No. " + record["Computer No"]);
-      const meta = metaBits.join(" · ") || "No file/computer no. on record";
-      return `<div class="gs-result" data-gs-index="${i}"><span class="gs-result-dot" style="background:${CAT_COLORS[cat]||'#767E92'}"></span><div class="gs-result-body"><div class="gs-result-title">${escapeHtml(title)}</div><div class="gs-result-meta">${escapeHtml(meta)}</div></div><span class="gs-result-cat">${escapeHtml(pendingCategoryLabel(cat))}</span></div>`;
-    }).join("") + (matches.length > shown.length ? `<div class="gs-hint">+${matches.length - shown.length} more — refine your search</div>` : "");
-    results.classList.add("open");
-    results.querySelectorAll("[data-gs-index]").forEach(el => el.onclick = () => {
-      const { cat, record } = shown[Number(el.dataset.gsIndex)];
-      results.classList.remove("open");
-      input.value = "";
-      openCaseDetail(cat, record);
-    });
   }
 
-  input.addEventListener("input", () => renderResults(input.value));
-  input.addEventListener("focus", () => { if (input.value.trim().length) renderResults(input.value); });
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".global-search-wrap")) results.classList.remove("open");
-  });
+  input.addEventListener("input", () => runSearch(input.value));
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { results.classList.remove("open"); input.blur(); }
+    if (e.key === "Escape") { input.value = ""; runSearch(""); input.blur(); }
   });
 }
 
@@ -1349,7 +1412,7 @@ function renderNav() {
   html += `<li><button data-tab="receipts" class="${currentTab==='receipts'?'active':''}"><span class="nav-icon">${NAV_ICONS.receipts}</span><span class="nav-label">Receipts</span>${DATA.Receipts ? `<span class="count">${DATA.Receipts.filter(r=>r.Status!=="Completed").length}</span>` : ""}</button></li>`;
   html += `<li><button data-tab="reports" class="${currentTab==='reports'?'active':''}"><span class="nav-icon">${NAV_ICONS.reports}</span><span class="nav-label">Reports</span></button></li>`;
   nav.innerHTML = html;
-  nav.querySelectorAll("button").forEach(b => b.onclick = () => { currentTab = b.dataset.tab; searchTerm=""; statusFilterVal=""; overviewDrilldown = { mode: "", category: "", bucket: "", via: "" }; categoryDrilldown = { active: false, bucket: "" }; renderNav(); renderPage(); });
+  nav.querySelectorAll("button").forEach(b => b.onclick = () => { currentTab = b.dataset.tab; searchTerm=""; statusFilterVal=""; globalSearchQuery=""; const gsi=document.getElementById("globalSearchInput"); if(gsi) gsi.value=""; overviewDrilldown = { mode: "", category: "", bucket: "", via: "" }; categoryDrilldown = { active: false, bucket: "" }; renderNav(); renderPage(); });
 }
 
 function daysSince(dateStr) {
@@ -1369,8 +1432,8 @@ function agingStamp(days) {
   return `<span class="reg-stamp ${cls}">${txt}</span>`;
 }
 function statusClass(s) {
-  if (s === "Completed" || s === "Revoked" || s === "Reinstated") return "status-completed";
-  if (s === "Returned") return "status-returned";
+  if (s === "Completed" || s === "Revoked" || s === "Reinstated" || s === "Sanction Granted") return "status-completed";
+  if (s === "Returned" || s === "Sanction Declined") return "status-returned";
   if (!s || s === "Received and under process" || s === "Under Suspension") return "status-pending";
   return "status-forwarded";
 }
@@ -1490,6 +1553,20 @@ function renderPage() {
     renderReceiptCards();
     content.innerHTML = renderReceiptList();
     attachReceiptHandlers();
+    return;
+  }
+
+  if (currentTab === "search") {
+    const count = performGlobalSearch(globalSearchQuery).length;
+    title.textContent = "Search results";
+    desc.textContent = globalSearchQuery.trim().length >= 3
+      ? `${count} case${count===1?"":"s"} match "${globalSearchQuery.trim()}" across every category`
+      : "Type at least 3 characters in the sidebar search to look across every case.";
+    addBtn.style.display = "none";
+    toolbarWrap.style.display = "none";
+    cards.innerHTML = ""; chartsRow.innerHTML = "";
+    content.innerHTML = renderSearchResultsPage();
+    attachRowHandlers();
     return;
   }
 
@@ -2464,6 +2541,7 @@ function renderReportsPage() {
           <option value="Withdrawal">Report for Withdrawal from Prosecution</option>
           <option value="Disciplinary">Report for Disciplinary Proceedings</option>
           <option value="Suspension">Report for Suspension Cases</option>
+          <option value="SanctionProsecution">Report for Sanction of Prosecution</option>
           <option value="complete">Complete Report (all categories)</option>
         </select>
       </div>
@@ -2499,7 +2577,8 @@ function inRange(dateStr, from, to) {
 
 const REPORT_BUCKET_COLORS = {
   DoPT: "#2E5A8C", DoLA: "#3F7A57", CBI: "#93691E", IA: "#2E7D6B", UPSC: "#6B4C93", CO: "#8C3B2E", Stayed: "#5A241C",
-  SuspOverdue: "#8C3B2E", SuspDueSoon: "#93691E", SuspOnTrack: "#3F7A57"
+  SuspOverdue: "#8C3B2E", SuspDueSoon: "#93691E", SuspOnTrack: "#3F7A57",
+  SopExamination: "#2E5A8C", SopWithCO: "#8C3B2E", SopLegalOpinion: "#6B4C93", SopReturned: "#5A241C"
 };
 const SUSPENSION_BUCKET_ORDER = ["SuspOverdue", "SuspDueSoon", "SuspOnTrack"];
 const SUSPENSION_BUCKET_LABELS = {
@@ -2515,9 +2594,24 @@ function suspensionReportBucket(r) {
   if (d >= -15) return "SuspDueSoon";
   return "SuspOnTrack";
 }
+const SOP_BUCKET_ORDER = ["SopExamination", "SopWithCO", "SopLegalOpinion", "SopReturned"];
+const SOP_BUCKET_LABELS = {
+  SopExamination: "Under Examination (DoPT)",
+  SopWithCO: "Referred to CO for Comments",
+  SopLegalOpinion: "Referred for Legal Opinion",
+  SopReturned: "Returned to Agency"
+};
+function sopReportBucket(r) {
+  if (isCompleted("SanctionProsecution", r)) return null;
+  if (r.Status === "Referred to CO for comments") return "SopWithCO";
+  if (r.Status === "Referred for Legal Opinion") return "SopLegalOpinion";
+  if (r.Status === "Returned") return "SopReturned";
+  return "SopExamination";
+}
 function getReportConfig(cat) {
   if (cat === "Disciplinary") return { buckets: BUCKET_ORDER, labels: BUCKET_LABELS, bucketFn: disciplinaryBucket };
   if (cat === "Suspension") return { buckets: SUSPENSION_BUCKET_ORDER, labels: SUSPENSION_BUCKET_LABELS, bucketFn: suspensionReportBucket };
+  if (cat === "SanctionProsecution") return { buckets: SOP_BUCKET_ORDER, labels: SOP_BUCKET_LABELS, bucketFn: sopReportBucket };
   return { buckets: LITIGATION_DASHBOARD_BUCKETS, labels: PENDING_BUCKET_LABELS, bucketFn: (r) => pendingBucketFor(cat, r) };
 }
 function reportTableHeader(cat, bucket) {
@@ -2527,6 +2621,9 @@ function reportTableHeader(cat, bucket) {
   }
   if (cat === "Suspension") {
     return `<tr><th>Sr.</th><th>Officer, Designation &amp; Grounds</th><th>Present Status</th><th>Valid Upto</th><th>Remarks</th></tr>`;
+  }
+  if (cat === "SanctionProsecution") {
+    return `<tr><th>Sr.</th><th>Officer, Designation &amp; Grounds</th><th>Present Status</th><th>Sought By</th><th>Remarks</th></tr>`;
   }
   return `<tr><th>Sr.</th><th>File No. / RC No. &amp; Subject</th><th>Present Position</th><th>Remarks</th></tr>`;
 }
@@ -2543,6 +2640,12 @@ function reportRowForCategory(cat, r, i, bucket) {
     const grounds = r.Subject ? `Grounds: ${escapeHtml(r.Subject)}` : "";
     const present = escapeHtml(r["Present Status"] || "—");
     return `<tr><td>${i+1}</td><td>${nameDesig}${grounds}</td><td>${present}</td><td>${escapeHtml(formatIndianDate(r["Suspension Valid Upto"]))}</td><td>${escapeHtml(r.Remarks||"—")}</td></tr>`;
+  }
+  if (cat === "SanctionProsecution") {
+    const nameDesig = r["Name & Designation of Officer"] ? `<strong>${escapeHtml(r["Name & Designation of Officer"])}</strong><br>` : "";
+    const grounds = r.Subject ? `Grounds: ${escapeHtml(r.Subject)}` : "";
+    const present = escapeHtml(r["Present Status"] || r.Status || "—");
+    return `<tr><td>${i+1}</td><td>${nameDesig}${grounds}</td><td>${present}</td><td>${escapeHtml(r["SoP Sought By"]||"—")}</td><td>${escapeHtml(r.Remarks||"—")}</td></tr>`;
   }
   const fileBits = [];
   if (r["File No"]) fileBits.push("File No. " + r["File No"]);
@@ -2600,7 +2703,7 @@ function buildReport(type, from, to) {
   // receipt-date-windowed lists — an old stayed/long-running case must
   // always appear regardless of the date filter, so it's skipped for them.
   function rowsFor(c) {
-    const skipDateFilter = c === "Disciplinary" || c === "Suspension";
+    const skipDateFilter = c === "Disciplinary" || c === "Suspension" || c === "SanctionProsecution";
     return (skipDateFilter ? (DATA[c]||[]).slice() : (DATA[c]||[]).filter(r => inRange(r["Date of Receipt"], from, to)))
       .sort((a,b) => new Date(a["Date of Receipt"]) - new Date(b["Date of Receipt"]));
   }
