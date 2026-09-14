@@ -465,6 +465,33 @@
   .report-empty{font-size:13.5px;color:var(--slate-light);font-style:italic;margin-bottom:10px;}
   .report-summary-page{page-break-after:always;}
   .report-bucket-section{page-break-before:always;}
+
+  /* ---------- Disciplinary snapshot ---------- */
+  .snap-header{background:linear-gradient(135deg,#1a2740,#16223d);color:#fff;border-radius:12px;padding:18px 24px;text-align:center;margin-bottom:18px;}
+  .snap-header h2{margin:0 0 4px;font-family:var(--serif);font-size:24px;font-weight:700;}
+  .snap-header div{font-size:13px;opacity:.85;}
+  .snap-total{background:var(--blue-soft);border:2px solid var(--blue);border-radius:10px;padding:12px 26px;text-align:center;max-width:440px;margin:0 auto 20px;font-size:14px;font-weight:700;color:var(--ink);}
+  .snap-total span{font-family:var(--serif);font-size:26px;display:block;margin-top:3px;}
+  .snap-groups{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;}
+  .snap-col-wide{flex:2 1 560px;}
+  .snap-col{flex:1 1 200px;min-width:200px;}
+  .snap-group-head{border-radius:8px;padding:10px 14px;text-align:center;font-size:13px;font-weight:700;border:2px solid var(--border-strong);background:var(--paper);color:var(--ink);margin-bottom:12px;}
+  .snap-group-accent{background:var(--amber-soft);border-color:var(--amber);}
+  .snap-group-count{display:block;font-family:var(--serif);font-size:16px;margin-top:2px;}
+  .snap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .snap-stack{display:flex;flex-direction:column;gap:10px;}
+  .snap-case{border-radius:8px;border:1.5px solid;padding:9px 10px;font-size:11px;line-height:1.4;position:relative;}
+  .snap-num{position:absolute;top:-8px;left:-8px;width:20px;height:20px;border-radius:50%;color:#fff;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--paper-raised);}
+  .snap-name{font-weight:700;margin-bottom:4px;font-size:11.5px;}
+  .snap-lbl{font-weight:700;display:inline;}
+  .snap-pill{display:inline-block;margin-top:6px;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+  .snap-legend{margin-top:20px;border:1.5px solid var(--border-strong);border-radius:10px;padding:12px 18px;}
+  .snap-legend-title{text-align:center;font-weight:700;font-size:13px;margin-bottom:8px;}
+  .snap-legend-items{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;font-size:11px;}
+  .snap-legend-item{display:flex;align-items:center;gap:6px;}
+  .snap-legend-swatch{width:14px;height:14px;border-radius:4px;border:1.5px solid;flex-shrink:0;}
+  .snap-footer{margin-top:12px;display:flex;justify-content:space-between;font-size:10.5px;color:var(--slate-light);font-style:italic;flex-wrap:wrap;gap:6px;}
+  @media (max-width:700px){ .snap-grid{grid-template-columns:repeat(2,1fr);} .snap-groups{flex-direction:column;} }
   .report-bucket-section .report-cat-title{border-bottom-width:3px;}
 
   /* ---------- Toast ---------- */
@@ -838,7 +865,8 @@ const BADGE_BUCKET_LABELS = {
   IA: "Pending with IA",
   UPSC: "Pending with UPSC",
   CO: "Pending with CO",
-  Stayed: "Stayed by CAT/HC"
+  Stayed: "Stayed by CAT/HC",
+  Completed: "Completed"
 };
 function disciplinaryBucket(r) {
   if ((r["Under Stay (CAT/High Court)"] || "No") === "Yes") return "Stayed";
@@ -2548,9 +2576,94 @@ function renderReportsPage() {
       <div><label>From</label><br><input type="date" id="reportFrom"></div>
       <div><label>To</label><br><input type="date" id="reportTo"></div>
       <button class="btn" id="generateReportBtn" style="align-self:flex-end;">Generate report</button>
+      <button class="btn ghost" id="generateSnapshotBtn" style="align-self:flex-end;">Generate snapshot</button>
       <button class="btn ghost" id="printReportBtn" style="align-self:flex-end;display:none;">Print / Save as PDF</button>
     </div>
     <div id="reportOutput"></div>
+  `;
+}
+
+/* ---------------------------------------------------------------------
+   Disciplinary snapshot — a visual, org-chart-style view (grouped by
+   officer where an officer has more than one case, then by stage
+   within the remaining cases) generated live from current data. Lives
+   alongside Reports since it's another on-screen/printable output.
+   --------------------------------------------------------------------- */
+function normalizeDelinquentName(name) {
+  if (!name) return "(unnamed)";
+  let n = name.trim().replace(/^(Shri|Sh\.|Smt\.|Ms\.|Mr\.|Dr\.)\s+/i, "");
+  const commaIdx = n.indexOf(",");
+  return (commaIdx > -1 ? n.slice(0, commaIdx) : n).trim();
+}
+function snapshotBucketFor(r) {
+  if (isCompleted("Disciplinary", r)) return "Completed";
+  return disciplinaryBucket(r);
+}
+function snapshotCaseCard(r, sr) {
+  const bucket = snapshotBucketFor(r);
+  const color = REPORT_BUCKET_COLORS[bucket] || "#333A4A";
+  const label = BADGE_BUCKET_LABELS[bucket] || bucket;
+  const name = escapeHtml(r["Name & Designation of Delinquent"] || "(no name on record)");
+  const allegation = escapeHtml((r.Subject || "—").slice(0, 130)) + ((r.Subject||"").length > 130 ? "…" : "");
+  const stage = escapeHtml(canonicalStage(r.Stage) || r.Status || "—");
+  return `<div class="snap-case" style="background:${color}14;border-color:${color}55;">
+    <div class="snap-num" style="background:${color};">${sr}</div>
+    <div class="snap-name" style="color:${color};">${name}</div>
+    <div class="snap-lbl">Allegation:</div> ${allegation}
+    <div class="snap-pill" style="background:${color}2a;color:${color};">${escapeHtml(stage)}</div>
+  </div>`;
+}
+function buildDisciplinarySnapshot() {
+  const rows = DATA.Disciplinary || [];
+  const groups = {};
+  rows.forEach(r => {
+    const key = normalizeDelinquentName(r["Name & Designation of Delinquent"]);
+    (groups[key] = groups[key] || []).push(r);
+  });
+  const multiNames = Object.keys(groups).filter(k => groups[k].length > 1).sort();
+  const singles = [];
+  Object.keys(groups).forEach(k => { if (groups[k].length === 1) singles.push(groups[k][0]); });
+  // Cluster the "other officers" cases by stage so same-stage cases sit together.
+  singles.sort((a, b) => {
+    const sa = canonicalStage(a.Stage) || "", sb = canonicalStage(b.Stage) || "";
+    return sa === sb ? 0 : sa.localeCompare(sb);
+  });
+
+  let sr = 0;
+  const singleCards = singles.map(r => snapshotCaseCard(r, ++sr)).join("");
+  const groupBlocks = multiNames.map(name => {
+    const list = groups[name];
+    const cards = list.map(r => snapshotCaseCard(r, ++sr)).join("");
+    return `<div class="snap-col">
+      <div class="snap-group-head snap-group-accent">${escapeHtml(name)}<span class="snap-group-count">${list.length} case${list.length===1?"":"s"}</span></div>
+      <div class="snap-stack">${cards}</div>
+    </div>`;
+  }).join("");
+
+  const legendEntries = ["DoPT","CBI","IA","UPSC","CO","Completed","Stayed"];
+  const legend = legendEntries.map(b => `<div class="snap-legend-item"><span class="snap-legend-swatch" style="background:${REPORT_BUCKET_COLORS[b]}22;border-color:${REPORT_BUCKET_COLORS[b]};"></span>${BADGE_BUCKET_LABELS[b]}</div>`).join("");
+
+  return `
+    <div class="snap-header">
+      <h2>Disciplinary Proceedings</h2>
+      <div>AVD-II (B) Section — Current Cases (as per Register)</div>
+    </div>
+    <div class="snap-total">Total Disciplinary Cases (as per Register)<span>${rows.length}</span></div>
+    <div class="snap-groups">
+      <div class="snap-col snap-col-wide">
+        <div class="snap-group-head">Other Officers / Officials<span class="snap-group-count">${singles.length} case${singles.length===1?"":"s"}</span></div>
+        <div class="snap-grid">${singleCards}</div>
+      </div>
+      ${groupBlocks}
+    </div>
+    <div class="snap-legend">
+      <div class="snap-legend-title">Pending-With / Status Colour Guide</div>
+      <div class="snap-legend-items">${legend}</div>
+    </div>
+    <div class="snap-footer">
+      <span>Colour shows who the matter is currently pending with (from the "Pending With" field), not the allegation.</span>
+      <span>Generated on ${new Date().toLocaleString('en-IN')}</span>
+    </div>
   `;
 }
 
@@ -2561,6 +2674,12 @@ function attachReportHandlers() {
     const to = document.getElementById("reportTo").value;
     const out = document.getElementById("reportOutput");
     out.innerHTML = buildReport(type, from, to);
+    out.style.display = "block";
+    document.getElementById("printReportBtn").style.display = "inline-block";
+  };
+  document.getElementById("generateSnapshotBtn").onclick = () => {
+    const out = document.getElementById("reportOutput");
+    out.innerHTML = buildDisciplinarySnapshot();
     out.style.display = "block";
     document.getElementById("printReportBtn").style.display = "inline-block";
   };
@@ -2576,7 +2695,7 @@ function inRange(dateStr, from, to) {
 }
 
 const REPORT_BUCKET_COLORS = {
-  DoPT: "#2E5A8C", DoLA: "#3F7A57", CBI: "#93691E", IA: "#2E7D6B", UPSC: "#6B4C93", CO: "#8C3B2E", Stayed: "#5A241C",
+  DoPT: "#2E5A8C", DoLA: "#3F7A57", CBI: "#93691E", IA: "#2E7D6B", UPSC: "#6B4C93", CO: "#8C3B2E", Stayed: "#5A241C", Completed: "#2F7D46",
   SuspOverdue: "#8C3B2E", SuspDueSoon: "#93691E", SuspOnTrack: "#3F7A57",
   SopExamination: "#2E5A8C", SopWithCO: "#8C3B2E", SopLegalOpinion: "#6B4C93", SopReturned: "#5A241C"
 };
