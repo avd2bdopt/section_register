@@ -532,6 +532,13 @@
     #reportOutput *, #printArea *{
       -webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact;
     }
+    /* CSS grid/flex do not paginate reliably — a row taller than one
+       page overlaps itself across the page break. Stack everything as
+       plain blocks for print so it always flows cleanly page to page. */
+    .snap-groups, .snap-col, .snap-grid, .snap-stack{display:block !important;width:100% !important;flex:none !important;}
+    .snap-col{margin-bottom:16px;}
+    .snap-case{width:100%;margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
+    .snap-header, .snap-total, .snap-group-head{page-break-inside:avoid;break-inside:avoid;}
   }
 
   @media (max-width: 880px){
