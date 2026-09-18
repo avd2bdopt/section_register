@@ -1267,6 +1267,19 @@ async function apiAdd(sheet, data) {
   });
   return (await res.json()).data;
 }
+async function apiBackup() {
+  if (DEMO_MODE) {
+    throw new Error("Backup needs a connected Google Sheet — demo mode has nothing to back up.");
+  }
+  const res = await fetch(CONFIG.API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "backup" })
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || "Backup failed");
+  return json.data;
+}
 async function apiUpdate(sheet, id, data) {
   if (DEMO_MODE) {
     const store = demoStore();
@@ -2577,6 +2590,8 @@ function renderReportsPage() {
           <option value="Disciplinary">Report for Disciplinary Proceedings</option>
           <option value="Suspension">Report for Suspension Cases</option>
           <option value="SanctionProsecution">Report for Sanction of Prosecution</option>
+          <option value="Tasks">Report for Tasks</option>
+          <option value="Receipts">Report for Receipts</option>
           <option value="complete">Complete Report (all categories)</option>
         </select>
       </div>
@@ -2585,6 +2600,13 @@ function renderReportsPage() {
       <button class="btn" id="generateReportBtn" style="align-self:flex-end;">Generate report</button>
       <button class="btn ghost" id="generateSnapshotBtn" style="align-self:flex-end;">Generate snapshot</button>
       <button class="btn ghost" id="printReportBtn" style="align-self:flex-end;display:none;">Print / Save as PDF</button>
+    </div>
+    <div class="report-controls" style="margin-top:-8px;">
+      <div style="flex:1;min-width:220px;">
+        <label>Backup</label><br>
+        <div style="font-size:11.5px;color:var(--slate-light);margin-top:4px;">Saves a timestamped copy of the whole Google Sheet to a "AVD-II (B) Case Register Backups" folder in Drive.</div>
+      </div>
+      <button class="btn ghost" id="backupBtn" style="align-self:flex-end;">Backup Google Sheet now</button>
     </div>
     <div id="reportOutput"></div>
   `;
@@ -2691,6 +2713,20 @@ function attachReportHandlers() {
     document.getElementById("printReportBtn").style.display = "inline-block";
   };
   document.getElementById("printReportBtn").onclick = () => window.print();
+  document.getElementById("backupBtn").onclick = async () => {
+    const btn = document.getElementById("backupBtn");
+    btn.disabled = true;
+    btn.textContent = "Backing up…";
+    try {
+      const info = await apiBackup();
+      showToast(`Backup saved to Drive: "${info.fileName}"`);
+    } catch (err) {
+      showToast("Backup failed — " + (err.message || "check connection"));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Backup Google Sheet now";
+    }
+  };
 }
 
 function inRange(dateStr, from, to) {
@@ -2820,7 +2856,61 @@ function buildBucketDetailSections(cat, buckets, showMasterHeading) {
   return html;
 }
 
+function buildSimpleListReport(type, from, to) {
+  const isTask = type === "Tasks";
+  const fields = isTask ? TASK_FIELDS : RECEIPT_FIELDS;
+  const dateKey = isTask ? "Due Date" : "Date of Receipt";
+  const title = isTask ? "Tasks Register" : "Receipts Register";
+  const rangeText = (from || to) ? ` &middot; ${from ? formatIndianDate(from) : "start"} to ${to ? formatIndianDate(to) : "today"}` : ` &middot; as on ${formatDDMMYYYY()}`;
+
+  let rows = (DATA[type] || []).slice();
+  if (from || to) rows = rows.filter(r => inRange(r[dateKey], from, to));
+  rows.sort((a,b) => new Date(a[dateKey]) - new Date(b[dateKey]));
+
+  const total = rows.length;
+  const completed = rows.filter(r => r.Status === "Completed").length;
+  const pending = total - completed;
+  const accent = isTask ? "#2E5A8C" : "#8C3B2E";
+
+  let html = `<div class="cat-block-heading" style="background:${accent};">${title} — Present Status</div>`;
+  html += `<table class="report-summary-table"><tbody>`;
+  html += `<tr><td>Total ${title}</td><td><span class="report-count-badge" style="background:${accent}">${String(total).padStart(2,"0")}</span></td></tr>`;
+  html += `<tr><td>Completed</td><td><span class="report-count-badge" style="background:${REPORT_BUCKET_COLORS.DoLA}">${String(completed).padStart(2,"0")}</span></td></tr>`;
+  html += `<tr class="total-row"><td>Pending</td><td><span class="report-count-badge total">${String(pending).padStart(2,"0")}</span></td></tr>`;
+  html += `</tbody></table>`;
+
+  const cols = fields.map(f => f.key);
+  html += `<div class="report-bucket-section"><h3 class="report-register-title">${title}</h3>`;
+  if (!rows.length) {
+    html += `<div class="report-empty">No entries in this range.</div>`;
+  } else {
+    html += `<table class="report-table"><thead><tr><th>Sr.</th>${cols.map(k=>`<th>${escapeHtml(k)}</th>`).join("")}</tr></thead><tbody>`;
+    rows.forEach((r,i) => {
+      html += `<tr><td>${i+1}</td>${cols.map(k => {
+        const field = fields.find(f => f.key === k);
+        const value = field && field.type === "date" ? formatIndianDate(r[k]) : (r[k] || "—");
+        return `<td>${escapeHtml(value)}</td>`;
+      }).join("")}</tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += `</div>`;
+
+  return `
+    <div class="report-summary-page">
+      <div class="report-header">
+        <div class="report-org">Department of Personnel &amp; Training</div>
+        <div class="report-section">AVD-II (B)</div>
+        <div class="report-h1">${title}</div>
+        <div class="report-sub">Generated on ${new Date().toLocaleString('en-IN')}${rangeText}</div>
+      </div>
+      ${html}
+    </div>
+  `;
+}
+
 function buildReport(type, from, to) {
+  if (type === "Tasks" || type === "Receipts") return buildSimpleListReport(type, from, to);
   const cats = type === "complete" ? CATS : [type];
   const title = type === "complete" ? "Complete Report — All Categories" : `Present Status of ${SCHEMAS[type].label}`;
   const rangeText = (from || to) ? ` &middot; ${from ? formatIndianDate(from) : "start"} to ${to ? formatIndianDate(to) : "today"}` : ` &middot; as on ${formatDDMMYYYY()}`;
