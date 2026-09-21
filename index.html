@@ -2778,8 +2778,7 @@ function getReportConfig(cat) {
 }
 function reportTableHeader(cat, bucket) {
   if (cat === "Disciplinary") {
-    const showMemoDate = bucket === "Stayed";
-    return `<tr><th>Sr.</th><th>Name, Designation &amp; Brief Charge</th><th>Present Status</th>${showMemoDate ? "<th>Charge Memo Date</th>" : ""}<th>Remarks</th></tr>`;
+    return `<tr><th>Sr.</th><th>Name, Designation &amp; Brief Charge</th><th>Present Status</th><th>Charge Memo Issued On</th><th>Remarks</th></tr>`;
   }
   if (cat === "Suspension") {
     return `<tr><th>Sr.</th><th>Officer, Designation &amp; Grounds</th><th>Present Status</th><th>Valid Upto</th><th>Remarks</th></tr>`;
@@ -2794,8 +2793,8 @@ function reportRowForCategory(cat, r, i, bucket) {
     const nameDesig = r["Name & Designation of Delinquent"] ? `<strong>${escapeHtml(r["Name & Designation of Delinquent"])}</strong><br>` : "";
     const charge = r.Subject ? `Brief charge: ${escapeHtml(r.Subject)}` : "";
     const present = escapeHtml(r["Present Status"] || canonicalStage(r.Stage) || "—");
-    const showMemoDate = bucket === "Stayed";
-    return `<tr><td>${i+1}</td><td>${nameDesig}${charge}</td><td>${present}</td>${showMemoDate ? `<td>${escapeHtml(formatIndianDate(r["Charge Memo Date"]))}</td>` : ""}<td>${escapeHtml(r.Remarks||"—")}</td></tr>`;
+    const memoDate = formatIndianDate(r["Date chargesheet issued"] || r["Charge Memo Date"]);
+    return `<tr><td>${i+1}</td><td>${nameDesig}${charge}</td><td>${present}</td><td>${escapeHtml(memoDate)}</td><td>${escapeHtml(r.Remarks||"—")}</td></tr>`;
   }
   if (cat === "Suspension") {
     const nameDesig = r["Name & Designation of Officer"] ? `<strong>${escapeHtml(r["Name & Designation of Officer"])}</strong><br>` : "";
