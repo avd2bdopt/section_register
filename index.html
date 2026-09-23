@@ -676,6 +676,8 @@ body.images-ready{
 #reportOutput, #printArea{background-image:none !important;}
 </style>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -683,7 +685,7 @@ body.images-ready{
   <div class="loading-mark">AB</div>
   <div class="loading-ring"><span></span><span></span><span></span></div>
   <div class="loading-text" id="loadingText">Loading your case register…</div>
-  <div class="loading-sub" id="loadingSub">Connecting to Google Sheets</div>
+  <div class="loading-sub" id="loadingSub">Connecting to Firebase</div>
 </div>
 
 <div class="app" id="appRoot">
@@ -712,7 +714,7 @@ body.images-ready{
         <span>PDF tools &amp; guidelines — cssmitra.in</span>
       </a>
       <div style="margin-top:12px;"><span class="api-dot" id="apiDot"></span><span id="apiStatusText">Checking connection…</span></div>
-      <div style="margin-top:6px;">Data source: Google Sheets</div>
+      <div style="margin-top:6px;">Data source: Firebase (Firestore)</div>
     </div>
   </aside>
 
@@ -754,21 +756,50 @@ body.images-ready{
 
 <script>
 /* =====================================================================
-   CONFIG — paste your Apps Script Web App /exec URL here once deployed.
-   Until you do, the dashboard runs in local demo mode (data is stored
-   only in this browser, via localStorage) so you can preview it.
+   CONFIG — paste your Firebase project config here once created
+   (Firebase Console → Project settings → General → Your apps → SDK
+   setup and configuration → "Config"). Until you do, the dashboard
+   runs in local demo mode (data stored only in this browser via
+   localStorage) so you can preview it.
+
+   BACKUP_API_URL is separate — it's the Apps Script Web App /exec URL
+   for the small "snapshot to Google Sheet" backup script (see the
+   Backup button on Reports). It has nothing to do with everyday data
+   loading, which now goes through Firestore above.
    ===================================================================== */
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzLVIrTIpN7YT2Dsk18HPUwk1Huwl3tu91o5Q2RD4rs5KukLer7SkRJvOdDnRKud2Xn/exec" // e.g. "https://script.google.com/macros/s/AKfycb.../exec"
+  FIREBASE: {
+    apiKey: "AIzaSyCr7_k4mNmNih1mLKpzjtByUlidGOHFBKs",
+    authDomain: "avd2b-case-register.firebaseapp.com",
+    projectId: "avd2b-case-register",
+    storageBucket: "avd2b-case-register.firebasestorage.app",
+    messagingSenderId: "1010708265710",
+    appId: "1:1010708265710:web:aa920ec35bc98a009ad1ff"
+  },
+  BACKUP_API_URL: "https://script.google.com/macros/s/AKfycbzCtOdeIuNwPkoHpB0BUXR0ZHzL1B9aSXMa1b4Jqc_2BLbVo86ld1xQT565m-a9-HO8/exec"
 };
 
-// Start the network request the instant we know the URL — this runs
-// before any of the rest of this (large) script has even finished
-// parsing, so the request is in flight the whole time the browser is
+const DEMO_MODE = !CONFIG.FIREBASE.projectId;
+let db = null;
+if (!DEMO_MODE) {
+  firebase.initializeApp(CONFIG.FIREBASE);
+  db = firebase.firestore();
+}
+const FIRESTORE_COLLECTIONS = ["SLP", "Appeals", "Withdrawal", "Disciplinary", "Suspension", "SanctionProsecution", "Tasks", "Receipts"];
+
+// Start reading every collection the instant Firestore is ready — this
+// runs before the rest of this (large) script has even finished
+// parsing, so the reads are in flight the whole time the browser is
 // still setting up the page. On a slow mobile connection this overlap
 // is the single biggest lever for perceived load time.
-let _earlyListPromise = CONFIG.API_URL
-  ? fetch(CONFIG.API_URL + "?action=list").then(r => r.json()).catch(err => ({ __earlyError: String(err) }))
+let _earlyListPromise = !DEMO_MODE
+  ? Promise.all(FIRESTORE_COLLECTIONS.map(name => db.collection(name).get()))
+      .then(snapshots => {
+        const data = {};
+        FIRESTORE_COLLECTIONS.forEach((name, i) => { data[name] = snapshots[i].docs.map(doc => ({ ...doc.data(), ID: doc.id })); });
+        return { ok: true, data };
+      })
+      .catch(err => ({ ok: false, error: String((err && err.message) || err) }))
   : null;
 
 /* ---------------------------------------------------------------------
@@ -1210,10 +1241,9 @@ const RECEIPT_FIELDS = [
 ];
 
 /* ---------------------------------------------------------------------
-   Data layer — talks to Apps Script if CONFIG.API_URL is set,
+   Data layer — talks to Firestore if CONFIG.FIREBASE.projectId is set,
    otherwise falls back to localStorage demo mode.
    --------------------------------------------------------------------- */
-const DEMO_MODE = !CONFIG.API_URL;
 const LS_KEY = "avd2_case_register_demo";
 const SESSION_CACHE_KEY = "avd2_case_register_last_loaded";
 
@@ -1221,7 +1251,7 @@ function demoStore() {
   let s = localStorage.getItem(LS_KEY);
   if (s) return JSON.parse(s);
   const seed = {};
-  [...CATS, "Tasks", "Receipts"].forEach(c => seed[c] = []);
+  FIRESTORE_COLLECTIONS.forEach(c => seed[c] = []);
   localStorage.setItem(LS_KEY, JSON.stringify(seed));
   return seed;
 }
@@ -1242,14 +1272,13 @@ async function apiList() {
     const p = _earlyListPromise;
     _earlyListPromise = null; // consume once; any later call fetches fresh
     const json = await p;
-    if (json && json.__earlyError) throw new Error(json.__earlyError);
     if (!json || !json.ok) throw new Error((json && json.error) || "Failed to load");
     return json.data;
   }
-  const res = await fetch(CONFIG.API_URL + "?action=list");
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error || "Failed to load");
-  return json.data;
+  const snapshots = await Promise.all(FIRESTORE_COLLECTIONS.map(name => db.collection(name).get()));
+  const data = {};
+  FIRESTORE_COLLECTIONS.forEach((name, i) => { data[name] = snapshots[i].docs.map(doc => ({ ...doc.data(), ID: doc.id })); });
+  return data;
 }
 async function apiAdd(sheet, data) {
   if (DEMO_MODE) {
@@ -1260,21 +1289,23 @@ async function apiAdd(sheet, data) {
     demoSave(store);
     return data;
   }
-  const res = await fetch(CONFIG.API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "add", sheet, data })
-  });
-  return (await res.json()).data;
+  const docRef = await db.collection(sheet).add(data);
+  return { ...data, ID: docRef.id };
 }
 async function apiBackup() {
   if (DEMO_MODE) {
-    throw new Error("Backup needs a connected Google Sheet — demo mode has nothing to back up.");
+    throw new Error("Backup needs a connected Firebase project — demo mode has nothing to back up.");
   }
-  const res = await fetch(CONFIG.API_URL, {
+  if (!CONFIG.BACKUP_API_URL) {
+    throw new Error("Backup isn't set up yet — add BACKUP_API_URL in CONFIG once the backup script is deployed.");
+  }
+  const snapshots = await Promise.all(FIRESTORE_COLLECTIONS.map(name => db.collection(name).get()));
+  const data = {};
+  FIRESTORE_COLLECTIONS.forEach((name, i) => { data[name] = snapshots[i].docs.map(doc => ({ ...doc.data(), ID: doc.id })); });
+  const res = await fetch(CONFIG.BACKUP_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "backup" })
+    body: JSON.stringify({ action: "snapshot", data })
   });
   const json = await res.json();
   if (!json.ok) throw new Error(json.error || "Backup failed");
@@ -1289,11 +1320,7 @@ async function apiUpdate(sheet, id, data) {
     demoSave(store);
     return true;
   }
-  await fetch(CONFIG.API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "update", sheet, id, data })
-  });
+  await db.collection(sheet).doc(id).update(data);
   return true;
 }
 async function apiDelete(sheet, id) {
@@ -1303,11 +1330,7 @@ async function apiDelete(sheet, id) {
     demoSave(store);
     return true;
   }
-  await fetch(CONFIG.API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "delete", sheet, id })
-  });
+  await db.collection(sheet).doc(id).delete();
   return true;
 }
 
@@ -1334,29 +1357,21 @@ async function boot() {
   let slowTimers = [];
   function clearSlowTimers() { slowTimers.forEach(t => clearTimeout(t)); slowTimers = []; }
   if (!cached && !DEMO_MODE) {
-    // Google Apps Script can take anywhere from ~2 seconds to over a
-    // minute to respond, depending on whether it's "warm" (recently
-    // used) or "cold" (idle for a while) — this is normal for Apps
-    // Script, not a bug. Rather than hiding the loading screen on a
-    // fixed timer (which previously left a confusing all-zeros page
-    // behind on a slow/cold load), keep it up and explain what's
-    // happening so it never looks stuck or broken.
+    // Firestore is normally fast (well under a second) — this is just a
+    // safety net in case of a genuinely slow connection, so the screen
+    // never looks stuck without explanation.
     slowTimers.push(setTimeout(() => {
-      overlaySub.textContent = "Still connecting — this can take a little longer than usual";
+      overlaySub.textContent = "Still connecting — this can take a little longer on a slow connection";
     }, 6000));
     slowTimers.push(setTimeout(() => {
-      overlayText.textContent = "Google Sheets is waking up…";
-      overlaySub.textContent = "First request of the session can take up to a minute — still working, please wait";
-    }, 15000));
-    slowTimers.push(setTimeout(() => {
-      overlaySub.textContent = "Still trying — if this continues for more than 2 minutes, try reloading the page";
-    }, 45000));
+      overlaySub.textContent = "Still trying — if this continues, try reloading the page";
+    }, 20000));
   }
 
   if (DEMO_MODE) {
-    statusText.textContent = "Demo mode — no Sheet connected";
+    statusText.textContent = "Demo mode — no Firebase project connected";
   } else {
-    statusText.textContent = "Connecting to Google Sheets…";
+    statusText.textContent = "Connecting to Firebase…";
   }
   // Render the shell right away — with cached data if we have it, or an
   // empty state otherwise — so the page never sits blank/frozen while
@@ -1377,7 +1392,7 @@ async function boot() {
     saveSessionCache(DATA);
     if (!DEMO_MODE) {
       dot.classList.add("live");
-      statusText.textContent = "Connected to Google Sheets";
+      statusText.textContent = "Connected to Firebase";
     }
     renderNav();
     renderPage();
@@ -1388,7 +1403,7 @@ async function boot() {
       renderNav();
       renderPage();
     }
-    showToast("Could not reach the API — check CONFIG.API_URL");
+    showToast("Could not reach Firebase — check CONFIG.FIREBASE and Firestore rules");
   } finally {
     clearSlowTimers();
     overlay.classList.add("hide");
