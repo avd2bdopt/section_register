@@ -449,6 +449,10 @@
   .bucket-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;display:inline-block;box-shadow:0 0 0 3px rgba(0,0,0,.06);}
   table.report-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:15px;margin-bottom:12px;}
   table.report-table th, table.report-table td{border:1px solid #CFC7B4;padding:9px 11px;text-align:left;vertical-align:top;word-wrap:break-word;}
+  .report-timeline-line{font-size:12px;line-height:1.5;margin-bottom:3px;}
+  .report-timeline-line:last-child{margin-bottom:0;}
+  .report-timeline-date{font-family:var(--mono);color:var(--slate-light);white-space:nowrap;}
+  .report-timeline-note{color:var(--slate-light);font-style:italic;}
   table.report-table th{background:#EDE7D6;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;font-weight:700;color:var(--ink-soft);}
   table.report-table tr:nth-child(even) td{background:#FBF9F3;}
   table.report-table th:first-child, table.report-table td:first-child{width:44px;}
@@ -2793,7 +2797,7 @@ function getReportConfig(cat) {
 }
 function reportTableHeader(cat, bucket) {
   if (cat === "Disciplinary") {
-    return `<tr><th>Sr.</th><th>Name, Designation &amp; Brief Charge</th><th>Present Status</th><th>Charge Memo Issued On</th><th>Remarks</th></tr>`;
+    return `<tr><th>Sr.</th><th>Name, Designation &amp; Brief Charge</th><th>Present Status</th><th>Case Timeline</th><th>Remarks</th></tr>`;
   }
   if (cat === "Suspension") {
     return `<tr><th>Sr.</th><th>Officer, Designation &amp; Grounds</th><th>Present Status</th><th>Valid Upto</th><th>Remarks</th></tr>`;
@@ -2803,13 +2807,20 @@ function reportTableHeader(cat, bucket) {
   }
   return `<tr><th>Sr.</th><th>File No. / RC No. &amp; Subject</th><th>Present Position</th><th>Remarks</th></tr>`;
 }
+function reportTimelineCell(cat, r) {
+  const events = timelineEvents(cat, r);
+  if (!events.length) return "—";
+  return events.map(ev => {
+    const d = ev.date ? formatIndianDate(ev.date) : "Date not entered";
+    return `<div class="report-timeline-line"><span class="report-timeline-date">${escapeHtml(d)}</span> — <strong>${escapeHtml(ev.label)}</strong>${ev.note ? ` <span class="report-timeline-note">(${escapeHtml(ev.note)})</span>` : ""}</div>`;
+  }).join("");
+}
 function reportRowForCategory(cat, r, i, bucket) {
   if (cat === "Disciplinary") {
     const nameDesig = r["Name & Designation of Delinquent"] ? `<strong>${escapeHtml(r["Name & Designation of Delinquent"])}</strong><br>` : "";
     const charge = r.Subject ? `Brief charge: ${escapeHtml(r.Subject)}` : "";
     const present = escapeHtml(r["Present Status"] || canonicalStage(r.Stage) || "—");
-    const memoDate = formatIndianDate(r["Date chargesheet issued"] || r["Charge Memo Date"]);
-    return `<tr><td>${i+1}</td><td>${nameDesig}${charge}</td><td>${present}</td><td>${escapeHtml(memoDate)}</td><td>${escapeHtml(r.Remarks||"—")}</td></tr>`;
+    return `<tr><td>${i+1}</td><td>${nameDesig}${charge}</td><td>${present}</td><td>${reportTimelineCell(cat, r)}</td><td>${escapeHtml(r.Remarks||"—")}</td></tr>`;
   }
   if (cat === "Suspension") {
     const nameDesig = r["Name & Designation of Officer"] ? `<strong>${escapeHtml(r["Name & Designation of Officer"])}</strong><br>` : "";
