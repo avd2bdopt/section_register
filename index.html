@@ -1324,7 +1324,7 @@ async function apiUpdate(sheet, id, data) {
     demoSave(store);
     return true;
   }
-  await db.collection(sheet).doc(id).update(data);
+  await db.collection(sheet).doc(id).set(data, { merge: true });
   return true;
 }
 async function apiDelete(sheet, id) {
