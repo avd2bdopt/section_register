@@ -2808,11 +2808,11 @@ function reportTableHeader(cat, bucket) {
   return `<tr><th>Sr.</th><th>File No. / RC No. &amp; Subject</th><th>Present Position</th><th>Remarks</th></tr>`;
 }
 function reportTimelineCell(cat, r) {
-  const events = timelineEvents(cat, r);
+  const events = timelineEvents(cat, r).filter(ev => ev.note !== "Initial receipt");
   if (!events.length) return "—";
   return events.map(ev => {
     const d = ev.date ? formatIndianDate(ev.date) : "Date not entered";
-    return `<div class="report-timeline-line"><span class="report-timeline-date">${escapeHtml(d)}</span> — <strong>${escapeHtml(ev.label)}</strong>${ev.note ? ` <span class="report-timeline-note">(${escapeHtml(ev.note)})</span>` : ""}</div>`;
+    return `<div class="report-timeline-line"><span class="report-timeline-date">${escapeHtml(d)}</span> — <strong>${escapeHtml(ev.label)}</strong></div>`;
   }).join("");
 }
 function reportRowForCategory(cat, r, i, bucket) {
