@@ -961,7 +961,7 @@ const DP_TIMELINE_DATE_FIELDS = [
    views even where older Sheet records still carry an in-process status. */
 function isCompleted(cat, r) {
   if (COMPLETED_LITIGATION_CATEGORIES.includes(cat)) return r.Status === "Communicated to CBI";
-  if (cat === "Disciplinary") return r.Stage === "Final Order issued with the approval of DA";
+  if (cat === "Disciplinary") return r.Stage === "Final Order issued with the approval of DA" || r.Status === "Completed";
   if (cat === "Suspension") return r.Status === "Revoked" || r.Status === "Reinstated";
   if (cat === "SanctionProsecution") return r.Status === "Sanction Granted" || r.Status === "Sanction Declined";
   return r.Status === "Completed";
@@ -2790,7 +2790,7 @@ function sopReportBucket(r) {
   return "SopExamination";
 }
 function getReportConfig(cat) {
-  if (cat === "Disciplinary") return { buckets: BUCKET_ORDER, labels: BUCKET_LABELS, bucketFn: disciplinaryBucket };
+  if (cat === "Disciplinary") return { buckets: BUCKET_ORDER, labels: BUCKET_LABELS, bucketFn: (r) => isCompleted("Disciplinary", r) ? null : disciplinaryBucket(r) };
   if (cat === "Suspension") return { buckets: SUSPENSION_BUCKET_ORDER, labels: SUSPENSION_BUCKET_LABELS, bucketFn: suspensionReportBucket };
   if (cat === "SanctionProsecution") return { buckets: SOP_BUCKET_ORDER, labels: SOP_BUCKET_LABELS, bucketFn: sopReportBucket };
   return { buckets: LITIGATION_DASHBOARD_BUCKETS, labels: PENDING_BUCKET_LABELS, bucketFn: (r) => pendingBucketFor(cat, r) };
